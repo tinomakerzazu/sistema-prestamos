@@ -1,4 +1,4 @@
-﻿[build]
+[build]
   publish = "sistema-corporacion-v2"
   functions = "netlify/functions"
 
