@@ -1,5 +1,5 @@
-﻿function loginWithProvider(provider) {
-    alert(`Función "${provider}" en desarrollo.\n\nPor ahora usa el login tradicional:\nUsuario: admin\nContraseña: admin123`);
+function loginWithProvider(provider) {
+    alert(`Funcion "${provider}" en desarrollo.\n\nPor ahora usa el login tradicional:\nUsuario: jairo@corp.prestamos.com\nContrasena: 011029`);
 }
 
 document.getElementById('loginForm').addEventListener('submit', (e) => {
@@ -7,9 +7,9 @@ document.getElementById('loginForm').addEventListener('submit', (e) => {
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
 
-    if (username === 'admin' && password === 'admin123') {
+    if (username === 'jairo@corp.prestamos.com' && password === '011029') {
         sessionStorage.setItem('isLoggedIn', 'true');
-        sessionStorage.setItem('userName', 'Administrador');
+        sessionStorage.setItem('userName', 'Jairo');
 
         const btn = document.querySelector('.btn-login');
         btn.textContent = 'ACCESO AUTORIZADO';
@@ -19,7 +19,7 @@ document.getElementById('loginForm').addEventListener('submit', (e) => {
             window.location.href = 'dashboard.html';
         }, 800);
     } else {
-        alert('Acceso denegado\n\nCredenciales incorrectas\n\nUsuario: admin\nContraseña: admin123');
+        alert('Acceso denegado\n\nCredenciales incorrectas\n\nUsuario: jairo@corp.prestamos.com\nContrasena: 011029');
     }
 });
 
