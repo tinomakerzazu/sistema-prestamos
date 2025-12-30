@@ -1,0 +1,234 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendario - Corporación</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="app-shell">
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="bi bi-shield-shaded"></i>
+            <span>CORPORACIÓN</span>
+        </div>
+        <div class="navbar-menu">
+            <span class="user-info">
+                <i class="bi bi-person-circle"></i>
+                <span id="userName">Administrador</span>
+            </span>
+            <button onclick="logout()" class="btn btn-secondary btn-sm" type="button">
+                <i class="bi bi-box-arrow-right"></i> Salir
+            </button>
+        </div>
+    </nav>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="container-app">
+        <aside class="sidebar" id="sidebar">
+            <ul class="menu">
+                <li class="menu-section"><span class="menu-title">Operaciones</span></li>
+                <li class="menu-item">
+                    <a href="dashboard.html" class="menu-link">
+                        <i class="bi bi-house-door menu-icon"></i>
+                        <span class="menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="clientes.html" class="menu-link">
+                        <i class="bi bi-people menu-icon"></i>
+                        <span class="menu-text">Clientes</span>
+                        <span class="menu-badge" id="clientesBadge">0</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="prestamos.html" class="menu-link">
+                        <i class="bi bi-cash-stack menu-icon"></i>
+                        <span class="menu-text">Préstamos</span>
+                        <span class="menu-badge" id="prestamosBadge">0</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="pagos.html" class="menu-link">
+                        <i class="bi bi-credit-card menu-icon"></i>
+                        <span class="menu-text">Pagos</span>
+                    </a>
+                </li>
+                <li class="menu-section"><span class="menu-title">Gestión</span></li>
+                <li class="menu-item">
+                    <a href="cobranzas.html" class="menu-link">
+                        <i class="bi bi-cash-coin menu-icon"></i>
+                        <span class="menu-text">Cobranzas</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="calendario.html" class="menu-link active">
+                        <i class="bi bi-calendar-week menu-icon"></i>
+                        <span class="menu-text">Calendario</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="reportes.html" class="menu-link">
+                        <i class="bi bi-bar-chart menu-icon"></i>
+                        <span class="menu-text">Reportes</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="reportes-avanzados.html" class="menu-link">
+                        <i class="bi bi-graph-up-arrow menu-icon"></i>
+                        <span class="menu-text">Reportes avanzados</span>
+                    </a>
+                </li>
+                <li class="menu-section"><span class="menu-title">Sistema</span></li>
+                <li class="menu-item">
+                    <a href="configuracion.html" class="menu-link">
+                        <i class="bi bi-gear menu-icon"></i>
+                        <span class="menu-text">Configuración</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1><i class="bi bi-calendar-week"></i> Calendario</h1>
+                    <p class="page-subtitle">Control de vencimientos, cobranzas y recordatorios clave.</p>
+                </div>
+                <button class="btn btn-primary" id="addEventoBtn" type="button">
+                    <i class="bi bi-plus-circle"></i> Nuevo evento
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon"><i class="bi bi-bell"></i></div>
+                    </div>
+                    <div class="stat-info">
+                        <h3>12</h3>
+                        <p>Alertas activas</p>
+                        <div class="stat-trend">
+                            <i class="bi bi-arrow-up"></i>
+                            <span>+4 esta semana</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
+                    </div>
+                    <div class="stat-info">
+                        <h3>6</h3>
+                        <p>Pagos programados</p>
+                        <div class="stat-trend">
+                            <i class="bi bi-arrow-down"></i>
+                            <span>-2 vs. semana anterior</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                    </div>
+                    <div class="stat-info">
+                        <h3>3</h3>
+                        <p>Vencimientos hoy</p>
+                        <div class="stat-trend">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <span>Revisar urgentes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-list-check"></i> Próximos eventos</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Tipo</th>
+                                <th>Detalle</th>
+                                <th>Prioridad</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventosTableBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">Sin eventos registrados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="addEventoModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="bi bi-calendar-plus"></i> Nuevo evento</h2>
+                        <button class="close-btn" onclick="closeModal('addEventoModal')" type="button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="eventoForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="eventoFecha">Fecha</label>
+                                    <input type="date" id="eventoFecha" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventoCliente">Cliente</label>
+                                    <input type="text" id="eventoCliente" class="form-control" placeholder="Nombre del cliente">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="eventoTipo">Tipo</label>
+                                    <select id="eventoTipo" class="form-control" required>
+                                        <option value="Pago">Pago</option>
+                                        <option value="Cobranza">Cobranza</option>
+                                        <option value="Visita">Visita</option>
+                                        <option value="Recordatorio">Recordatorio</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="eventoPrioridad">Prioridad</label>
+                                    <select id="eventoPrioridad" class="form-control">
+                                        <option value="Baja">Baja</option>
+                                        <option value="Media" selected>Media</option>
+                                        <option value="Alta">Alta</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventoDetalle">Detalle</label>
+                                <textarea id="eventoDetalle" class="form-control" rows="3" placeholder="Notas o detalle del evento"></textarea>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" onclick="closeModal('addEventoModal')" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Guardar evento
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/calendario.js"></script>
+</body>
+</html>

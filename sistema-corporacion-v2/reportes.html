@@ -1,0 +1,258 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes - Corporación</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="app-shell page-reportes">
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="bi bi-shield-shaded"></i>
+            <span>CORPORACIÓN</span>
+        </div>
+        <div class="navbar-menu">
+            <span class="user-info">
+                <i class="bi bi-person-circle"></i>
+                <span id="userName">Administrador</span>
+            </span>
+            <button onclick="logout()" class="btn btn-secondary btn-sm" type="button">
+                <i class="bi bi-box-arrow-right"></i> Salir
+            </button>
+        </div>
+    </nav>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="container-app">
+        <aside class="sidebar" id="sidebar">
+            <ul class="menu">
+                <li class="menu-section"><span class="menu-title">Operaciones</span></li>
+                <li class="menu-item">
+                    <a href="dashboard.html" class="menu-link">
+                        <i class="bi bi-house-door menu-icon"></i>
+                        <span class="menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="clientes.html" class="menu-link">
+                        <i class="bi bi-people menu-icon"></i>
+                        <span class="menu-text">Clientes</span>
+                        <span class="menu-badge" id="clientesBadge">0</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="prestamos.html" class="menu-link">
+                        <i class="bi bi-cash-stack menu-icon"></i>
+                        <span class="menu-text">Préstamos</span>
+                        <span class="menu-badge" id="prestamosBadge">0</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="pagos.html" class="menu-link">
+                        <i class="bi bi-credit-card menu-icon"></i>
+                        <span class="menu-text">Pagos</span>
+                    </a>
+                </li>
+                <li class="menu-section"><span class="menu-title">Gestión</span></li>
+                <li class="menu-item">
+                    <a href="cobranzas.html" class="menu-link">
+                        <i class="bi bi-cash-coin menu-icon"></i>
+                        <span class="menu-text">Cobranzas</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="calendario.html" class="menu-link">
+                        <i class="bi bi-calendar-week menu-icon"></i>
+                        <span class="menu-text">Calendario</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="reportes.html" class="menu-link active">
+                        <i class="bi bi-bar-chart menu-icon"></i>
+                        <span class="menu-text">Reportes</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="reportes-avanzados.html" class="menu-link">
+                        <i class="bi bi-graph-up-arrow menu-icon"></i>
+                        <span class="menu-text">Reportes avanzados</span>
+                    </a>
+                </li>
+                <li class="menu-section"><span class="menu-title">Sistema</span></li>
+                <li class="menu-item">
+                    <a href="configuracion.html" class="menu-link">
+                        <i class="bi bi-gear menu-icon"></i>
+                        <span class="menu-text">Configuración</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <section class="hero-block">
+                <div class="hero-copy">
+                    <p class="eyebrow">Centro de reportes</p>
+                    <h1 class="hero-title"><i class="bi bi-bar-chart"></i> Reportes</h1>
+                    <p class="hero-subtitle">
+                        Resumen financiero, comportamiento de pagos y métricas clave del negocio.
+                    </p>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" id="exportCsvBtn" type="button">
+                            <i class="bi bi-download"></i> Exportar CSV
+                        </button>
+                        <button class="btn btn-secondary" id="downloadResumenBtn" type="button">
+                            <i class="bi bi-file-earmark-text"></i> Descargar resumen
+                        </button>
+                    </div>
+                    <div class="hero-tags">
+                        <span class="tag" id="reportUpdatedTag">Actualizado hoy</span>
+                        <span class="tag tag-outline" id="reportTotalTag">Total: S/ 0.00</span>
+                        <span class="tag tag-outline" id="reportPaymentsTag">0 pagos</span>
+                    </div>
+                </div>
+                <div class="hero-panel">
+                    <div class="panel-header">
+                        <h3>Resumen rápido</h3>
+                        <span class="panel-chip" id="reportRangeLabel">Últimos 30 días</span>
+                    </div>
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <p>Total cobrado</p>
+                            <h2 id="kpiTotalCobrado">S/ 0.00</h2>
+                            <span class="kpi-change positive" id="kpiCobradoChange">+0%</span>
+                        </div>
+                        <div class="kpi-card">
+                            <p>Pagos registrados</p>
+                            <h2 id="kpiPagosCount">0</h2>
+                            <span class="kpi-change" id="kpiPagosRange">Últimos 30 días</span>
+                        </div>
+                        <div class="kpi-card">
+                            <p>Ticket promedio</p>
+                            <h2 id="kpiTicketPromedio">S/ 0.00</h2>
+                            <span class="kpi-change" id="kpiTicketTag">Meta S/ 250</span>
+                        </div>
+                        <div class="kpi-card">
+                            <p>Clientes activos</p>
+                            <h2 id="kpiClientesActivos">0</h2>
+                            <span class="kpi-change" id="kpiClientesTag">Con pagos recientes</span>
+                        </div>
+                    </div>
+                    <div class="mini-chart">
+                        <div class="chart-header">
+                            <h4>Flujo mensual</h4>
+                            <span id="monthlyTotalLabel">S/ 0.00</span>
+                        </div>
+                        <div class="spark-bars" id="monthlyChart"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card filter-panel">
+                <div class="card-header">
+                    <h3><i class="bi bi-funnel"></i> Filtros de reporte</h3>
+                </div>
+                <div class="card-body">
+                    <div class="filters-row report-filter-grid">
+                        <div class="form-group">
+                            <label for="reportStartDate">Desde</label>
+                            <input type="date" id="reportStartDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="reportEndDate">Hasta</label>
+                            <input type="date" id="reportEndDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="reportMetodo">Método</label>
+                            <select id="reportMetodo" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Yape/Plin">Yape/Plin</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="reportEstado">Estado</label>
+                            <select id="reportEstado" class="form-control">
+                                <option value="">Todos</option>
+                                <option value="Registrado">Registrado</option>
+                                <option value="Aplicado">Aplicado</option>
+                                <option value="Observado">Observado</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="hero-actions">
+                        <button class="btn btn-primary" id="generateReportBtn" type="button">
+                            <i class="bi bi-lightning-charge"></i> Generar reporte
+                        </button>
+                        <button class="btn btn-secondary" id="clearReportFiltersBtn" type="button">
+                            <i class="bi bi-arrow-counterclockwise"></i> Limpiar filtros
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="reportes-grid">
+                <div class="card panel-card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-graph-up"></i> Distribución por método</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="meter-list" id="metodoList"></div>
+                    </div>
+                </div>
+                <div class="card panel-card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-person-check"></i> Top clientes</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="topClientesList"></div>
+                    </div>
+                </div>
+                <div class="card panel-card">
+                    <div class="card-header">
+                        <h3><i class="bi bi-bell"></i> Insights</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group" id="reportInsights"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <div class="card-header">
+                        <h3><i class="bi bi-clock-history"></i> Últimos pagos</h3>
+                </div>
+                <div class="card-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Cliente</th>
+                                <th>Método</th>
+                                <th>Referencia</th>
+                                <th>Monto</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportPagosBody">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">No hay pagos registrados</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/reportes.js"></script>
+</body>
+</html>

@@ -1,0 +1,290 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Clientes - Corporación</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+</head>
+<body class="app-shell">
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="bi bi-shield-shaded"></i>
+            <span>CORPORACIÓN</span>
+        </div>
+        <div class="navbar-menu">
+            <span class="user-info">
+                <i class="bi bi-person-circle"></i>
+                <span id="userName">Administrador</span>
+            </span>
+            <button onclick="logout()" class="btn btn-secondary btn-sm" type="button">
+                <i class="bi bi-box-arrow-right"></i> Salir
+            </button>
+        </div>
+    </nav>
+
+    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="container-app">
+        <aside class="sidebar" id="sidebar">
+            <ul class="menu">
+                <li class="menu-section"><span class="menu-title">Operaciones</span></li>
+                <li class="menu-item">
+                    <a href="dashboard.html" class="menu-link">
+                        <i class="bi bi-house-door menu-icon"></i>
+                        <span class="menu-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="clientes.html" class="menu-link active">
+                        <i class="bi bi-people menu-icon"></i>
+                        <span class="menu-text">Clientes</span>
+                        <span class="menu-badge" id="clientesBadge">0</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="prestamos.html" class="menu-link">
+                        <i class="bi bi-cash-stack menu-icon"></i>
+                        <span class="menu-text">Préstamos</span>
+                        <span class="menu-badge" id="prestamosBadge">0</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="pagos.html" class="menu-link">
+                        <i class="bi bi-credit-card menu-icon"></i>
+                        <span class="menu-text">Pagos</span>
+                    </a>
+                </li>
+                <li class="menu-section"><span class="menu-title">Gestión</span></li>
+                <li class="menu-item">
+                    <a href="cobranzas.html" class="menu-link">
+                        <i class="bi bi-cash-coin menu-icon"></i>
+                        <span class="menu-text">Cobranzas</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="calendario.html" class="menu-link">
+                        <i class="bi bi-calendar-week menu-icon"></i>
+                        <span class="menu-text">Calendario</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="reportes.html" class="menu-link">
+                        <i class="bi bi-bar-chart menu-icon"></i>
+                        <span class="menu-text">Reportes</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="reportes-avanzados.html" class="menu-link">
+                        <i class="bi bi-graph-up-arrow menu-icon"></i>
+                        <span class="menu-text">Reportes avanzados</span>
+                    </a>
+                </li>
+                <li class="menu-section"><span class="menu-title">Sistema</span></li>
+                <li class="menu-item">
+                    <a href="configuracion.html" class="menu-link">
+                        <i class="bi bi-gear menu-icon"></i>
+                        <span class="menu-text">Configuración</span>
+                    </a>
+                </li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1><i class="bi bi-people"></i> Gestión de clientes</h1>
+                    <button onclick="showAddClienteModal()" class="btn btn-primary" type="button"><i class="bi bi-plus-circle"></i> Nuevo cliente</button>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-search"></i> Buscar cliente</h3>
+                </div>
+                <div class="card-body">
+                    <div class="search-bar">
+                        <div class="form-group">
+                            <input type="text" id="searchCliente" class="form-control" placeholder="Buscar por DNI, nombre o teléfono..." onkeyup="filterClientes()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-list"></i> Lista de clientes</h3>
+                </div>
+                <div class="card-body">
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Foto</th>
+                                    <th>DNI</th>
+                                    <th>Nombre completo</th>
+                                    <th>Teléfono</th>
+                                    <th>Dirección</th>
+                                    <th>Aval</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clientesTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">No hay clientes registrados</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="addClienteModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="bi bi-person-plus"></i> Nuevo cliente</h2>
+                        <button class="close-btn" onclick="closeModal('addClienteModal')" type="button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="clienteForm">
+                            <div class="foto-upload-container">
+                                <div class="foto-upload-box">
+                                    <label class="foto-label">
+                                        <i class="bi bi-person-circle"></i> Foto de perfil
+                                    </label>
+                                    <div class="foto-preview" id="fotoPerfilPreview" onclick="document.getElementById('fotoPerfil').click()">
+                                        <div class="foto-placeholder">
+                                            <i class="bi bi-camera-fill"></i>
+                                            <p>Click para subir foto</p>
+                                            <small>PNG, JPG (Max. 5MB)</small>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="fotoPerfil" class="foto-input" accept="image/*" onchange="previewFoto(this, 'fotoPerfilPreview')">
+                                </div>
+
+                                <div class="foto-upload-box">
+                                    <label class="foto-label">
+                                        <i class="bi bi-card-heading"></i> Foto del documento (DNI)
+                                    </label>
+                                    <div class="foto-preview" id="fotoDocumentoPreview" onclick="document.getElementById('fotoDocumento').click()">
+                                        <div class="foto-placeholder">
+                                            <i class="bi bi-file-earmark-image"></i>
+                                            <p>Click para subir documento</p>
+                                            <small>PNG, JPG (Max. 5MB)</small>
+                                        </div>
+                                    </div>
+                                    <input type="file" id="fotoDocumento" class="foto-input" accept="image/*" onchange="previewFoto(this, 'fotoDocumentoPreview')">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="dni">DNI</label>
+                                    <input type="text" id="dni" class="form-control" required maxlength="8" pattern="[0-9]{8}" placeholder="12345678">
+                                </div>
+                                <div class="form-group">
+                                    <label for="telefonoPrincipal">Teléfono principal</label>
+                                    <input type="tel" id="telefonoPrincipal" class="form-control" required placeholder="987654321">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="nombres">Nombres</label>
+                                    <input type="text" id="nombres" class="form-control" required placeholder="Juan Carlos">
+                                </div>
+                                <div class="form-group">
+                                    <label for="apellidos">Apellidos</label>
+                                    <input type="text" id="apellidos" class="form-control" required placeholder="Pérez García">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="direccion">Dirección</label>
+                                <input type="text" id="direccion" class="form-control" placeholder="Av. Principal 123, Lima">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="ocupacion">Ocupación</label>
+                                    <input type="text" id="ocupacion" class="form-control" placeholder="Comerciante">
+                                </div>
+                                <div class="form-group">
+                                    <label for="ingresosMensuales">Ingresos mensuales (S/)</label>
+                                    <input type="number" id="ingresosMensuales" class="form-control" step="0.01" placeholder="2500.00">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="observaciones">Observaciones</label>
+                                <textarea id="observaciones" class="form-control" rows="3" placeholder="Información adicional del cliente..."></textarea>
+                            </div>
+                            <div class="card map-card">
+                                <div class="card-header">
+                                    <h3><i class="bi bi-geo-alt"></i> Ubicación (tiempo real)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="map-actions">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="startLocation()">
+                                            <i class="bi bi-broadcast"></i> Iniciar
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="stopLocation()">
+                                            <i class="bi bi-pause-circle"></i> Detener
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearLocation()">
+                                            <i class="bi bi-x-circle"></i> Limpiar
+                                        </button>
+                                    </div>
+                                    <div class="map-box map-live" id="mapLive"></div>
+                                    <div class="map-coords">
+                                        <span id="locationStatus">Ubicación no registrada</span>
+                                        <span id="locationAccuracy"></span>
+                                    </div>
+                                    <input type="hidden" id="ubicacionLat">
+                                    <input type="hidden" id="ubicacionLng">
+                                    <input type="hidden" id="ubicacionAcc">
+                                </div>
+                            </div>
+                            <div class="card map-card">
+                                <div class="card-header">
+                                    <h3><i class="bi bi-person-badge"></i> Aval (opcional)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label for="avalNombre">Nombre del aval</label>
+                                            <input type="text" id="avalNombre" class="form-control" placeholder="Nombre completo del aval">
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="avalTelefono">Teléfono del aval</label>
+                                            <input type="tel" id="avalTelefono" class="form-control" placeholder="987654321">
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="avalRelacion">Relación</label>
+                                        <input type="text" id="avalRelacion" class="form-control" placeholder="Amigo, familiar, socio, etc.">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" onclick="closeModal('addClienteModal')" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Guardar cliente
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/storage.js"></script>
+    <script src="js/clientes.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</body>
+</html>

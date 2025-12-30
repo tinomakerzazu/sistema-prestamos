@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión - Corporación</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo-container">
+                    <div class="roman-helmet">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C10.9 2 10 2.9 10 4V6H6C5.45 6 5 6.45 5 7V9C5 9.55 5.45 10 6 10H7V13C7 14.1 7.9 15 9 15H10V19C10 19.55 10.45 20 11 20H13C13.55 20 14 19.55 14 19V15H15C16.1 15 17 14.1 17 13V10H18C18.55 10 19 9.55 19 9V7C19 6.45 18.55 6 18 6H14V4C14 2.9 13.1 2 12 2ZM12 4C12 4 12 4 12 4C12 4 12 4 12 4V6H12V4ZM6 8H18V9H17V13C17 13.55 16.55 14 16 14H8C7.45 14 7 13.55 7 13V9H6V8M9 10V12H10V10H9M14 10V12H15V10H14M11 16H13V18H11V16Z"/>
+                            <path d="M12 1C11.2 1 10.5 1.3 10 1.8V2H8C6.9 2 6 2.9 6 4V6H5C3.9 6 3 6.9 3 8V11C3 12.1 3.9 13 5 13H6V17C6 18.7 7.3 20 9 20H10V22C10 22.6 10.4 23 11 23H13C13.6 23 14 22.6 14 22V20H15C16.7 20 18 18.7 18 17V13H19C20.1 13 21 12.1 21 11V8C21 6.9 20.1 6 19 6H18V4C18 2.9 17.1 2 16 2H14V1.8C13.5 1.3 12.8 1 12 1M12 3C12.3 3 12.5 3.1 12.7 3.3L13 3.6V5H11V3.6L11.3 3.3C11.5 3.1 11.7 3 12 3M8 4H16V6H8V4M5 8H19V11H18V17C18 17.6 17.6 18 17 18H7C6.4 18 6 17.6 6 17V11H5V8M8 10V16H9V10H8M11 10V16H13V10H11M15 10V16H16V10H15M12 20H12V21H12V20Z"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="company-name">CORPORACIÓN</div>
+                <h1>Sistema de Préstamos</h1>
+                <p>Plataforma empresarial de gestión</p>
+            </div>
+
+            <div class="social-login">
+                <button class="social-btn" onclick="loginWithProvider('google')" type="button">
+                    <i class="bi bi-google"></i>
+                    Continuar con Google
+                </button>
+                <button class="social-btn" onclick="loginWithProvider('microsoft')" type="button">
+                    <i class="bi bi-microsoft"></i>
+                    Continuar con Microsoft
+                </button>
+                <button class="social-btn" onclick="loginWithProvider('phone')" type="button">
+                    <i class="bi bi-telephone"></i>
+                    Continuar con Teléfono
+                </button>
+            </div>
+
+            <div class="divider">
+                <span>O INICIA SESIÓN CON TU CUENTA</span>
+            </div>
+
+            <div class="login-form">
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Correo electrónico o usuario</label>
+                        <input type="text" id="username" class="form-control" placeholder="Ingresa tu correo o usuario" required autocomplete="username">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <input type="password" id="password" class="form-control" placeholder="Ingresa tu contraseña" required autocomplete="current-password">
+                    </div>
+
+                    <div class="remember-forgot">
+                        <label class="remember-me">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Recordar sesión</span>
+                        </label>
+                        <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-login">Iniciar Sesión</button>
+                </form>
+            </div>
+
+            <div class="signup-link">
+                ¿No tienes una cuenta? <a href="#">Solicita acceso corporativo</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+</body>
+</html>
