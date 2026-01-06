@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Préstamos - Corporación</title>
+    <title>Prestamos - Corporacion</title>
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +14,7 @@
     <nav class="navbar">
         <div class="navbar-brand">
             <i class="bi bi-shield-shaded"></i>
-            <span>CORPORACIÓN</span>
+            <span>CORPORACION</span>
         </div>
         <div class="navbar-menu">
             <span class="user-info">
@@ -49,7 +49,7 @@
                 <li class="menu-item">
                     <a href="prestamos.html" class="menu-link active">
                         <i class="bi bi-cash-stack menu-icon"></i>
-                        <span class="menu-text">Préstamos</span>
+                        <span class="menu-text">Prestamos</span>
                         <span class="menu-badge" id="prestamosBadge">0</span>
                     </a>
                 </li>
@@ -59,7 +59,7 @@
                         <span class="menu-text">Pagos</span>
                     </a>
                 </li>
-                <li class="menu-section"><span class="menu-title">Gestión</span></li>
+                <li class="menu-section"><span class="menu-title">Gestion</span></li>
                 <li class="menu-item">
                     <a href="cobranzas.html" class="menu-link">
                         <i class="bi bi-cash-coin menu-icon"></i>
@@ -88,7 +88,7 @@
                 <li class="menu-item">
                     <a href="configuracion.html" class="menu-link">
                         <i class="bi bi-gear menu-icon"></i>
-                        <span class="menu-text">Configuración</span>
+                        <span class="menu-text">Configuracion</span>
                     </a>
                 </li>
             </ul>
@@ -97,29 +97,166 @@
         <main class="main-content">
             <div class="page-header">
                 <div>
-                    <h1><i class="bi bi-cash-stack"></i> Préstamos</h1>
+                    <h1><i class="bi bi-cash-stack"></i> Prestamos</h1>
+                    <p class="page-subtitle">Registra prestamos con interes, tiempo de paga y cronograma.</p>
                 </div>
+                <button onclick="showAddPrestamoModal()" class="btn btn-primary" type="button">
+                    <i class="bi bi-plus-circle"></i> Nuevo prestamo
+                </button>
             </div>
+
             <div class="card">
                 <div class="card-header">
-                    <h3><i class="bi bi-list"></i> Lista de préstamos</h3>
+                    <h3><i class="bi bi-list"></i> Lista de prestamos</h3>
                 </div>
                 <div class="card-body">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Cliente</th>
-                                <th>Monto</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody id="prestamosTableBody">
-                            <tr>
-                                <td colspan="4" class="text-center text-muted">No hay préstamos registrados</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div style="overflow-x: auto;">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Monto prestado</th>
+                                    <th>Interes</th>
+                                    <th>Tiempo de paga</th>
+                                    <th>Cuota</th>
+                                    <th>Proximo pago</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="prestamosTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted">No hay prestamos registrados</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="addPrestamoModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="bi bi-cash-coin"></i> Nuevo prestamo</h2>
+                        <button class="close-btn" onclick="closeModal('addPrestamoModal')" type="button">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="prestamoForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="prestamoCliente">Cliente</label>
+                                    <select id="prestamoCliente" class="form-control" required>
+                                        <option value="">Cargando clientes...</option>
+                                    </select>
+                                    <small class="field-hint">Selecciona un cliente registrado.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="montoPrestado">Monto prestado (S/)</label>
+                                    <input type="number" id="montoPrestado" class="form-control" min="0" step="0.01" required placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="interesPrestamo">Interes (%)</label>
+                                    <input type="number" id="interesPrestamo" class="form-control" min="0" step="0.01" placeholder="10">
+                                </div>
+                                <div class="form-group">
+                                    <label for="estadoPrestamo">Estado</label>
+                                    <select id="estadoPrestamo" class="form-control">
+                                        <option value="activo">Activo</option>
+                                        <option value="en mora">En mora</option>
+                                        <option value="cerrado">Cerrado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="plazoCantidad">Tiempo de paga</label>
+                                    <input type="number" id="plazoCantidad" class="form-control" min="1" placeholder="12">
+                                    <small class="field-hint">Define el plazo total del prestamo.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="plazoUnidad">Unidad</label>
+                                    <select id="plazoUnidad" class="form-control">
+                                        <option value="dias">Dias</option>
+                                        <option value="semanas">Semanas</option>
+                                        <option value="meses" selected>Meses</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="fechaInicio">Fecha de inicio</label>
+                                    <input type="date" id="fechaInicio" class="form-control">
+                                </div>
+                                <div class="form-group">
+                                    <label for="frecuenciaPago">Frecuencia de pago</label>
+                                    <select id="frecuenciaPago" class="form-control">
+                                        <option value="semanal">Semanal</option>
+                                        <option value="quincenal">Quincenal</option>
+                                        <option value="mensual" selected>Mensual</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="numeroCuotas">Numero de cuotas</label>
+                                    <input type="number" id="numeroCuotas" class="form-control" min="1" placeholder="12">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cuotaEstimada">Cuota estimada</label>
+                                    <input type="text" id="cuotaEstimada" class="form-control" readonly placeholder="S/ 0.00">
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="totalPagar">Total a pagar</label>
+                                    <input type="text" id="totalPagar" class="form-control" readonly placeholder="S/ 0.00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="prestamoObservaciones">Observaciones</label>
+                                    <input type="text" id="prestamoObservaciones" class="form-control" placeholder="Detalles adicionales">
+                                </div>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3><i class="bi bi-calendar-check"></i> Cronograma de pagos</h3>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="generarCronogramaBtn">
+                                        <i class="bi bi-magic"></i> Generar
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div style="overflow-x: auto;">
+                                        <table class="table">
+                                            <thead>
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Fecha</th>
+                                                    <th>Monto</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="cronogramaTableBody">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted">Genera un cronograma para ver las cuotas.</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" onclick="closeModal('addPrestamoModal')" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Guardar prestamo
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
         </main>
