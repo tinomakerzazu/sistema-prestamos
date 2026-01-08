@@ -303,6 +303,187 @@ body {
     text-decoration: underline;
 }
 
+/* ========== DASHBOARD REVEAL ========== */
+.reveal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 20% 20%, rgba(240, 180, 90, 0.16) 0%, transparent 55%),
+                radial-gradient(circle at 85% 30%, rgba(31, 111, 139, 0.18) 0%, transparent 60%),
+                linear-gradient(135deg, rgba(7, 12, 16, 0.98) 0%, rgba(12, 18, 24, 0.98) 100%);
+    overflow: hidden;
+}
+
+.reveal-overlay.reveal-hide {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    pointer-events: none;
+}
+
+.reveal-panels {
+    position: absolute;
+    inset: 0;
+    display: flex;
+}
+
+.reveal-panel {
+    width: 50%;
+    background: linear-gradient(135deg, rgba(7, 12, 16, 0.98) 0%, rgba(14, 20, 28, 0.98) 100%);
+    box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
+}
+
+.reveal-panel.left {
+    animation: revealPanelLeft 1.2s cubic-bezier(0.24, 0.85, 0.28, 1) 0.55s forwards;
+}
+
+.reveal-panel.right {
+    animation: revealPanelRight 1.2s cubic-bezier(0.24, 0.85, 0.28, 1) 0.55s forwards;
+}
+
+.reveal-glow {
+    position: absolute;
+    width: 420px;
+    height: 420px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(240, 180, 90, 0.35) 0%, transparent 65%);
+    opacity: 0.9;
+    animation: glowPulse 1.4s ease 0.1s forwards;
+}
+
+.reveal-logo {
+    position: relative;
+    width: 360px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    font-family: var(--font-display);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    z-index: 1;
+    filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.65));
+    animation: logoLift 1s ease 0.1s forwards;
+}
+
+.reveal-logo .logo-half {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-weight: 700;
+}
+
+.reveal-logo .logo-text {
+    font-size: 24px;
+}
+
+.reveal-logo i {
+    font-size: 34px;
+}
+
+.logo-half.left {
+    clip-path: inset(0 50% 0 0);
+    animation: logoSplitLeft 1.2s ease 0.35s forwards;
+}
+
+.logo-half.right {
+    clip-path: inset(0 0 0 50%);
+    animation: logoSplitRight 1.2s ease 0.35s forwards;
+}
+
+@keyframes revealPanelLeft {
+    to { transform: translateX(-112%); }
+}
+
+@keyframes revealPanelRight {
+    to { transform: translateX(112%); }
+}
+
+@keyframes logoSplitLeft {
+    0% { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(-48px); opacity: 0; }
+}
+
+@keyframes logoSplitRight {
+    0% { transform: translateX(0); opacity: 1; }
+    100% { transform: translateX(48px); opacity: 0; }
+}
+
+@keyframes glowPulse {
+    0% { transform: scale(0.6); opacity: 0.2; }
+    60% { transform: scale(1); opacity: 0.95; }
+    100% { transform: scale(1.2); opacity: 0; }
+}
+
+@keyframes logoLift {
+    0% { transform: translateY(8px) scale(0.98); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+body.intro-reveal .navbar,
+body.intro-reveal .sidebar,
+body.intro-reveal .main-content {
+    opacity: 0;
+    transform: translateY(14px);
+}
+
+body.intro-reveal .navbar {
+    animation: introDrop 0.7s ease 1.4s forwards;
+}
+
+body.intro-reveal .sidebar {
+    animation: introDrop 0.8s ease 1.55s forwards;
+}
+
+body.intro-reveal .main-content {
+    animation: introDrop 0.85s ease 1.65s forwards;
+}
+
+@keyframes introDrop {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+    .reveal-logo {
+        width: 260px;
+        height: 64px;
+        letter-spacing: 2px;
+    }
+
+    .reveal-logo .logo-text {
+        font-size: 18px;
+    }
+
+    .reveal-logo i {
+        font-size: 28px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal-overlay {
+        display: none;
+    }
+
+    .reveal-panel,
+    .reveal-logo,
+    .logo-half.left,
+    .logo-half.right,
+    .reveal-glow,
+    body.intro-reveal .navbar,
+    body.intro-reveal .sidebar,
+    body.intro-reveal .main-content {
+        animation: none;
+        transform: none;
+        opacity: 1;
+    }
+}
+
 /* ========== NUEVO NAVBAR PREMIUM ========== */
 .navbar {
     background: linear-gradient(135deg, #0f1419 0%, #1a1f2e 100%);

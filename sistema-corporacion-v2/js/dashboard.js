@@ -30,3 +30,18 @@ async function loadStats() {
 }
 
 loadStats();
+
+const revealOverlay = document.querySelector('.reveal-overlay');
+document.body.classList.add('intro-reveal');
+if (revealOverlay) {
+    setTimeout(() => {
+        revealOverlay.classList.add('reveal-hide');
+    }, 1500);
+
+    setTimeout(() => {
+        revealOverlay.remove();
+        document.body.classList.remove('intro-reveal');
+    }, 2400);
+} else {
+    document.body.classList.remove('intro-reveal');
+}
