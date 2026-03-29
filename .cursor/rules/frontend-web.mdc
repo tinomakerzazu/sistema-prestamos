@@ -1,0 +1,14 @@
+---
+description: Convenciones frontend para panel web y flujo Vercel-first
+globs: sistema-corporacion-v2/js/**/*.js
+alwaysApply: false
+---
+
+# Frontend Web (Vanilla JS)
+
+- Usa `Storage`/`apiRequest` como punto único de llamadas al backend.
+- Mantén `credentials: include` para endpoints protegidos por cookie.
+- Ante `401`, limpia sesión local y redirige a `index.html`.
+- No agregues fallback Netlify automático; solo permitirlo por bandera explícita.
+- Conserva compatibilidad con páginas actuales (sin introducir framework nuevo).
+- Mantén mensajes de error comprensibles para operación diaria.

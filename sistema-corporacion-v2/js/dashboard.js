@@ -240,15 +240,13 @@ if (revealOverlay) {
             <div class="hud-ring middle" aria-hidden="true"></div>
             <div class="hud-ring inner" aria-hidden="true"></div>
             <div class="hud-content">
-                <span class="system-text">INITIALIZING</span>
-                <span class="brand-text">Norse Kredit</span>
-                <span class="status-text"><span class="status-dot"></span>ONLINE</span>
+                <span class="system-text">INICIO</span>
+                <span class="brand-text">Norse Kredit x EagleSpy</span>
+                <span class="status-text"><span class="status-dot"></span>LISTO</span>
             </div>
         </div>
         <div class="reveal-boot-lines" aria-hidden="true">
-            <div class="reveal-boot-line" style="animation-delay: 0.6s">[OK] Core modules loaded</div>
-            <div class="reveal-boot-line" style="animation-delay: 0.9s">[OK] Security layer active</div>
-            <div class="reveal-boot-line" style="animation-delay: 1.2s">[OK] Dashboard ready</div>
+            <div class="reveal-boot-line" style="animation-delay: 0.6s">Cargando panel...</div>
         </div>
         <div class="reveal-progress-wrap" aria-hidden="true">
             <div class="reveal-progress-fill"></div>

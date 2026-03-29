@@ -21,6 +21,7 @@ const pagosUltimoMonto = document.getElementById('pagosUltimoMonto');
 const pagosUltimoFecha = document.getElementById('pagosUltimoFecha');
 const pagosTotalDelta = document.getElementById('pagosTotalDelta');
 const pagosTotalTag = document.getElementById('pagosTotalTag');
+const pagosAvgTag = document.getElementById('pagosAvgTag');
 
 let pagosCache = [];
 let clientesCache = [];
@@ -156,6 +157,9 @@ function updateResumen(pagos) {
     pagosTotalDelta.textContent = `${porcentaje >= 0 ? '+' : ''}${porcentaje.toFixed(1)}%`;
     pagosTotalDelta.classList.toggle('positive', porcentaje >= 0);
     pagosTotalTag.textContent = label;
+    if (pagosAvgTag) {
+        pagosAvgTag.textContent = totalCount ? 'Promedio del listado filtrado' : 'Sin pagos en el filtro';
+    }
 }
 
 function calcularCambioMensual(pagos) {

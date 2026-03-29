@@ -17,6 +17,8 @@ const fechaInicioInput = document.getElementById('fechaInicio');
 const frecuenciaPagoInput = document.getElementById('frecuenciaPago');
 const plazoCantidadInput = document.getElementById('plazoCantidad');
 const plazoUnidadInput = document.getElementById('plazoUnidad');
+const prestamoModalTitle = document.getElementById('prestamoModalTitle');
+const prestamoEditIdInput = document.getElementById('prestamoEditId');
 
 let prestamosCache = [];
 let cronogramaCache = [];
@@ -139,12 +141,53 @@ function renderCronograma(schedule) {
 }
 
 function showAddPrestamoModal() {
+    if (prestamoEditIdInput) prestamoEditIdInput.value = '';
+    if (prestamoModalTitle) prestamoModalTitle.innerHTML = '<i class="bi bi-cash-coin"></i> Nuevo prestamo';
     prestamoForm.reset();
     cronogramaCache = [];
     setDefaultFecha();
     calculateTotals();
     renderCronograma([]);
     loadClientesForSelect();
+    showModal('addPrestamoModal');
+}
+
+async function showEditPrestamoModal(id) {
+    const prestamo = prestamosCache.find(p => p.id === id);
+    if (!prestamo) return;
+
+    await loadClientesForSelect();
+
+    if (prestamoEditIdInput) prestamoEditIdInput.value = prestamo.id;
+    if (prestamoModalTitle) prestamoModalTitle.innerHTML = '<i class="bi bi-pencil-square"></i> Editar prestamo';
+
+    if (prestamoClienteSelect && prestamo.clienteId) {
+        prestamoClienteSelect.value = prestamo.clienteId;
+    }
+
+    montoPrestadoInput.value = prestamo.montoPrestado ?? '';
+    interesPrestamoInput.value = prestamo.interes ?? '';
+    numeroCuotasInput.value = prestamo.numeroCuotas ?? '';
+    fechaInicioInput.value = prestamo.fechaInicio || '';
+    frecuenciaPagoInput.value = prestamo.frecuenciaPago || 'mensual';
+
+    const tp = String(prestamo.tiempoPaga || '').trim();
+    const m = tp.match(/^(\d+)\s+(\w+)/);
+    if (m) {
+        plazoCantidadInput.value = m[1];
+        const u = m[2].toLowerCase();
+        if (u.startsWith('dia')) plazoUnidadInput.value = 'dias';
+        else if (u.startsWith('semana')) plazoUnidadInput.value = 'semanas';
+        else plazoUnidadInput.value = 'meses';
+    }
+
+    document.getElementById('prestamoObservaciones').value = prestamo.observaciones || '';
+    document.getElementById('estadoPrestamo').value = prestamo.estado || 'activo';
+
+    cronogramaCache = Array.isArray(prestamo.cronogramaPagos) ? [...prestamo.cronogramaPagos] : [];
+    calculateTotals();
+    renderCronograma(cronogramaCache);
+
     showModal('addPrestamoModal');
 }
 
@@ -178,8 +221,14 @@ function renderPrestamos() {
                     <button class="btn btn-info btn-sm js-view-prestamo" data-prestamo-id="${id}" type="button" title="Ver detalle">
                         <i class="bi bi-eye"></i>
                     </button>
+                    <button class="btn btn-secondary btn-sm js-edit-prestamo" data-prestamo-id="${id}" type="button" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
                     <button class="btn btn-sm btn-enviar-sms js-sms-prestamo" data-prestamo-id="${id}" type="button" title="Enviar recordatorio por SMS al cliente">
                         <i class="bi bi-chat-dots"></i> SMS
+                    </button>
+                    <button class="btn btn-sm btn-outline-light js-email-prestamo" data-prestamo-id="${id}" type="button" title="Recordatorio por correo (requiere correo en cliente y SMTP)">
+                        <i class="bi bi-envelope"></i>
                     </button>
                     <button class="btn btn-danger btn-sm js-delete-prestamo" data-prestamo-id="${id}" type="button" title="Eliminar">
                         <i class="bi bi-trash"></i>
@@ -198,6 +247,28 @@ async function syncPrestamos() {
     } catch (err) {
         console.error(err);
         showNotification('No se pudieron cargar los prestamos', 'error');
+    }
+}
+
+async function enviarEmailRecordatorio(prestamoId) {
+    if (!prestamoId) return;
+    try {
+        const result = await Storage.enviarRecordatorioEmail(prestamoId);
+        if (result && result.ok) {
+            showNotification('Correo de recordatorio enviado', 'success');
+        }
+    } catch (err) {
+        const msg = err.message || '';
+        if (msg.includes('Correo no configurado') || msg.includes('SMTP')) {
+            showNotification('Correo no configurado en el servidor (SMTP).', 'error');
+            return;
+        }
+        if (msg.includes('correo valido') || msg.includes('correo electr')) {
+            showNotification('Agregue el correo del cliente en Clientes.', 'error');
+            return;
+        }
+        console.error(err);
+        showNotification(msg || 'No se pudo enviar el correo', 'error');
     }
 }
 
@@ -342,17 +413,26 @@ prestamoForm.addEventListener('submit', async (e) => {
         estado: document.getElementById('estadoPrestamo').value
     };
 
+    const editId = prestamoEditIdInput?.value?.trim();
+
     try {
-        await Storage.savePrestamo(payload);
-        showSuccessAnimation();
-        showNotification('Prestamo registrado correctamente', 'success');
-        setTimeout(() => {
+        if (editId) {
+            await Storage.updatePrestamo(editId, payload);
+            showNotification('Prestamo actualizado', 'success');
             closeModal('addPrestamoModal');
             syncPrestamos();
-        }, 1500);
+        } else {
+            await Storage.savePrestamo(payload);
+            showSuccessAnimation();
+            showNotification('Prestamo registrado correctamente', 'success');
+            setTimeout(() => {
+                closeModal('addPrestamoModal');
+                syncPrestamos();
+            }, 1500);
+        }
     } catch (err) {
         console.error(err);
-        showNotification('No se pudo registrar el prestamo', 'error');
+        showNotification(editId ? 'No se pudo actualizar el prestamo' : 'No se pudo registrar el prestamo', 'error');
     }
 });
 
@@ -373,10 +453,24 @@ document.addEventListener('click', (event) => {
         return;
     }
 
+    const editBtn = event.target.closest('.js-edit-prestamo');
+    if (editBtn) {
+        const id = editBtn.getAttribute('data-prestamo-id');
+        if (id) showEditPrestamoModal(id);
+        return;
+    }
+
     const smsBtn = event.target.closest('.js-sms-prestamo');
     if (smsBtn) {
         const id = smsBtn.getAttribute('data-prestamo-id');
         if (id) enviarSMSRecordatorio(id);
+        return;
+    }
+
+    const emailBtn = event.target.closest('.js-email-prestamo');
+    if (emailBtn) {
+        const id = emailBtn.getAttribute('data-prestamo-id');
+        if (id) enviarEmailRecordatorio(id);
         return;
     }
 
@@ -391,6 +485,8 @@ window.showAddPrestamoModal = showAddPrestamoModal;
 window.viewPrestamo = viewPrestamo;
 window.deletePrestamo = deletePrestamo;
 window.enviarSMSRecordatorio = enviarSMSRecordatorio;
+window.enviarEmailRecordatorio = enviarEmailRecordatorio;
+window.showEditPrestamoModal = showEditPrestamoModal;
 
 setDefaultFecha();
 calculateTotals();

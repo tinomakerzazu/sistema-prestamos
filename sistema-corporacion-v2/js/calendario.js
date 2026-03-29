@@ -21,6 +21,27 @@ const avisosClienteEmpty = document.getElementById('avisosClienteEmpty');
 
 let eventosCache = [];
 
+function updateCalendarioMetrics() {
+    const hoy = todayStr();
+    const total = eventosCache.length;
+    const pagosTipo = eventosCache.filter(e => (e.tipo || '') === 'Pago').length;
+    const hoyCount = eventosCache.filter(e => e.fecha === hoy).length;
+
+    const el1 = document.getElementById('calKpiTotal');
+    const el2 = document.getElementById('calKpiPagos');
+    const el3 = document.getElementById('calKpiHoy');
+    if (el1) el1.textContent = String(total);
+    if (el2) el2.textContent = String(pagosTipo);
+    if (el3) el3.textContent = String(hoyCount);
+
+    const t1 = document.querySelector('#calKpiTotalTrend span');
+    const t2 = document.querySelector('#calKpiPagosTrend span');
+    const t3 = document.querySelector('#calKpiHoyTrend span');
+    if (t1) t1.textContent = total ? 'Datos cargados del servidor' : 'Sin eventos aún';
+    if (t2) t2.textContent = 'Filtrado por tipo Pago';
+    if (t3) t3.textContent = hoyCount ? 'Revisa el panel de avisos' : 'Nada programado para hoy';
+}
+
 function todayStr() {
     const d = new Date();
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -72,6 +93,7 @@ function renderEventos() {
     if (!eventosCache.length) {
         eventosTableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Sin eventos registrados</td></tr>';
         renderAvisosPanel();
+        updateCalendarioMetrics();
         return;
     }
 
@@ -85,6 +107,9 @@ function renderEventos() {
                 <td>${escapeHtml(evento.detalle || '-')}</td>
                 <td>${escapeHtml(evento.prioridad || '-')} ${evento.avisarCliente && evento.avisoEnviadoCliente !== true ? ' <i class="bi bi-person-lines-fill" title="Pendiente avisar al cliente"></i>' : ''}</td>
                 <td>
+                    <button class="btn btn-secondary btn-sm js-edit-evento" data-evento-id="${escapeHtml(evento.id)}" type="button" title="Editar">
+                        <i class="bi bi-pencil"></i>
+                    </button>
                     <button class="btn btn-danger btn-sm js-delete-evento" data-evento-id="${escapeHtml(evento.id)}" type="button">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -94,6 +119,7 @@ function renderEventos() {
         .join('');
 
     renderAvisosPanel();
+    updateCalendarioMetrics();
 }
 
 async function loadEventos() {
@@ -111,8 +137,34 @@ async function loadEventos() {
 
 function showAddEventoModal() {
     if (!eventoForm) return;
+    const eid = document.getElementById('eventoEditId');
+    if (eid) eid.value = '';
+    const title = document.getElementById('eventoModalTitle');
+    if (title) title.innerHTML = '<i class="bi bi-calendar-plus"></i> Nuevo evento';
     eventoForm.reset();
     setEventoDefaultDate();
+    if (typeof showModal === 'function') {
+        showModal('addEventoModal');
+    }
+}
+
+function showEditEventoModal(id) {
+    const evento = eventosCache.find(e => e.id === id);
+    if (!evento || !eventoForm) return;
+
+    const eid = document.getElementById('eventoEditId');
+    if (eid) eid.value = evento.id;
+    const title = document.getElementById('eventoModalTitle');
+    if (title) title.innerHTML = '<i class="bi bi-pencil-square"></i> Editar evento';
+
+    document.getElementById('eventoFecha').value = evento.fecha || '';
+    document.getElementById('eventoCliente').value = evento.cliente || '';
+    document.getElementById('eventoTipo').value = evento.tipo || 'Pago';
+    document.getElementById('eventoPrioridad').value = evento.prioridad || 'Media';
+    document.getElementById('eventoDetalle').value = evento.detalle || '';
+    document.getElementById('eventoAvisarAdmin').checked = evento.avisarAdmin !== false;
+    document.getElementById('eventoAvisarCliente').checked = evento.avisarCliente === true;
+
     if (typeof showModal === 'function') {
         showModal('addEventoModal');
     }
@@ -139,6 +191,9 @@ if (eventoForm) {
     eventoForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const editId = document.getElementById('eventoEditId')?.value?.trim();
+        const prevEv = editId ? eventosCache.find(e => e.id === editId) : null;
+
         const payload = {
             fecha: document.getElementById('eventoFecha').value,
             cliente: document.getElementById('eventoCliente').value.trim(),
@@ -147,14 +202,21 @@ if (eventoForm) {
             detalle: document.getElementById('eventoDetalle').value.trim(),
             avisarAdmin: document.getElementById('eventoAvisarAdmin')?.checked !== false,
             avisarCliente: document.getElementById('eventoAvisarCliente')?.checked === true,
-            avisoEnviadoCliente: false
+            avisoEnviadoCliente: prevEv ? prevEv.avisoEnviadoCliente === true : false
         };
 
         if (!Storage?.saveEvento) return;
         try {
-            await Storage.saveEvento(payload);
-            if (typeof showNotification === 'function') {
-                showNotification('Evento registrado', 'success');
+            if (editId && Storage.updateEvento) {
+                await Storage.updateEvento(editId, payload);
+                if (typeof showNotification === 'function') {
+                    showNotification('Evento actualizado', 'success');
+                }
+            } else {
+                await Storage.saveEvento({ ...payload, avisoEnviadoCliente: false });
+                if (typeof showNotification === 'function') {
+                    showNotification('Evento registrado', 'success');
+                }
             }
             if (typeof closeModal === 'function') {
                 closeModal('addEventoModal');
@@ -174,6 +236,13 @@ if (addEventoBtn) {
 }
 
 document.addEventListener('click', (event) => {
+    const editBtn = event.target.closest('.js-edit-evento');
+    if (editBtn) {
+        const id = editBtn.getAttribute('data-evento-id');
+        if (id) showEditEventoModal(id);
+        return;
+    }
+
     const deleteBtn = event.target.closest('.js-delete-evento');
     if (deleteBtn) {
         const id = deleteBtn.getAttribute('data-evento-id');

@@ -80,7 +80,8 @@ const createClienteSchema = z.object({
     nombre: z.string().optional().default(''),
     telefono: z.string().optional().default(''),
     relacion: z.string().optional().default('')
-  }).optional().nullable()
+  }).optional().nullable(),
+  correo: z.string().trim().optional().default('')
 });
 
 const trackLocationSchema = z.object({
@@ -93,6 +94,10 @@ const trackLocationSchema = z.object({
 });
 
 const sendSmsSchema = z.object({
+  prestamoId: z.string().trim().min(1)
+});
+
+const sendEmailReminderSchema = z.object({
   prestamoId: z.string().trim().min(1)
 });
 
@@ -664,6 +669,82 @@ app.post('/api/recordatorios/enviar', smsLimiter, validateBody(sendSmsSchema), (
   mensaje += ' Gracias.';
 
   return sendTwilioSms({ req, res, prestamo, cliente, telefono, mensaje, clienteId });
+});
+
+app.post('/api/recordatorios/email', smsLimiter, validateBody(sendEmailReminderSchema), async (req, res) => {
+  const { prestamoId } = req.body;
+
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return res.status(400).json({
+      error: 'Correo no configurado. Defina SMTP_HOST, SMTP_USER y SMTP_PASS en el servidor.',
+      configured: false
+    });
+  }
+
+  try {
+    let prestamo;
+    let cliente;
+
+    if (HAS_SUPABASE) {
+      const prestamoResult = await getSupabase().from('prestamos').select('*').eq('id', prestamoId).maybeSingle();
+      if (prestamoResult.error) throw prestamoResult.error;
+      if (!prestamoResult.data) {
+        return res.status(404).json({ error: 'Prestamo no encontrado.' });
+      }
+      prestamo = mapPrestamoFromDb(prestamoResult.data);
+      const cid = prestamo.clienteId;
+      if (!cid) {
+        return res.status(400).json({ error: 'El prestamo no tiene clienteId asociado.' });
+      }
+      const clienteResult = await getSupabase().from('clientes').select('*').eq('id', cid).maybeSingle();
+      if (clienteResult.error) throw clienteResult.error;
+      if (!clienteResult.data) {
+        return res.status(400).json({ error: 'Cliente no encontrado para este prestamo.' });
+      }
+      cliente = mapClienteFromDb(clienteResult.data);
+    } else {
+      const prestamos = readData(dataFiles.prestamos);
+      const clientes = readData(dataFiles.clientes);
+      prestamo = prestamos.find(p => p.id === prestamoId);
+      if (!prestamo) {
+        return res.status(404).json({ error: 'Prestamo no encontrado.' });
+      }
+      const found = clientes.find(c => c.id === prestamo.clienteId);
+      if (!found) {
+        return res.status(400).json({ error: 'Cliente no encontrado para este prestamo.' });
+      }
+      cliente = found;
+    }
+
+    const correo = String(cliente.correo || '').trim();
+    if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+      return res.status(400).json({
+        error: 'El cliente no tiene un correo valido. Registrelo en la ficha del cliente (campo Correo).'
+      });
+    }
+
+    const { subject, text, html } = buildReminderEmailContent(prestamo, cliente);
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      secure: process.env.SMTP_SECURE === 'true',
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+    });
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: correo,
+      subject,
+      text,
+      html
+    });
+
+    appendAuditLog('email.reminder.sent', { prestamoId, toDomain: correo.split('@')[1] || null });
+    res.json({ ok: true, message: 'Recordatorio enviado por correo.' });
+  } catch (err) {
+    logError('email.reminder.error', err);
+    res.status(500).json({ error: err.message || 'No se pudo enviar el correo.' });
+  }
 });
 
 app.get('/api/pagos', (req, res) => {
@@ -1562,6 +1643,7 @@ function mapClienteToDb(cliente) {
     foto_documento: cliente.fotoDocumento,
     ubicacion: cliente.ubicacion ?? null,
     aval: cliente.aval ?? null,
+    correo: cliente.correo || '',
     created_at: cliente.createdAt,
     updated_at: cliente.updatedAt
   });
@@ -1583,6 +1665,7 @@ function mapClienteFromDb(row) {
     fotoDocumento: row.foto_documento,
     ubicacion: row.ubicacion ?? null,
     aval: row.aval ?? null,
+    correo: row.correo || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
@@ -1764,6 +1847,26 @@ function buildSmsMessage({ prestamo, cliente }) {
   if (fechaCuota) mensaje += ` Fecha: ${fechaCuota}.`;
   mensaje += ' Gracias.';
   return mensaje;
+}
+
+function buildReminderEmailContent(prestamo, cliente) {
+  const cronograma = prestamo.cronogramaPagos || [];
+  const proximaCuota = cronograma.find(c => (c.estado || '').toLowerCase() === 'pendiente');
+  const montoCuota = proximaCuota ? Number(proximaCuota.monto) : Number(prestamo.cuota) || 0;
+  const fechaCuota = proximaCuota && proximaCuota.fecha ? proximaCuota.fecha : '';
+  const nombreCliente = (prestamo.cliente || cliente.nombres || 'Cliente').split(' ')[0];
+  let text = `Norse Kredit: Hola ${nombreCliente}, tiene un pago pendiente de S/ ${montoCuota.toFixed(2)}.`;
+  if (fechaCuota) text += ` Fecha: ${fechaCuota}.`;
+  text += ' Gracias.';
+  const html = `<p>${String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')}</p>`;
+  return {
+    subject: 'Recordatorio de pago - Norse Kredit',
+    text,
+    html
+  };
 }
 
 function sendTwilioSms({ res, prestamo, cliente, telefono, mensaje, clienteId }) {

@@ -1,4 +1,4 @@
-﻿# Supabase setup para Netlify
+# Supabase setup para Netlify
 
 ## Variables de entorno en Netlify
 - `SUPABASE_URL`
@@ -27,6 +27,7 @@ create table if not exists public.clientes (
   foto_documento text,
   ubicacion jsonb,
   aval jsonb,
+  correo text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -77,6 +78,12 @@ create table if not exists public.cobranzas (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+```
+
+Si la tabla `clientes` ya existía sin correo, ejecuta:
+
+```sql
+alter table public.clientes add column if not exists correo text;
 ```
 
 ## Nota

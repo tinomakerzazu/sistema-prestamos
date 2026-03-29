@@ -219,7 +219,7 @@ function updateKpis(pagos) {
     kpiCobradoChange.textContent = `${change.percent >= 0 ? '+' : ''}${change.percent.toFixed(1)}%`;
     kpiCobradoChange.classList.toggle('positive', change.percent >= 0);
     kpiPagosRange.textContent = change.label;
-    kpiTicketTag.textContent = `Meta ${formatMoney(250)}`;
+    kpiTicketTag.textContent = 'Por pago en el rango';
     kpiClientesTag.textContent = 'Con pagos recientes';
 }
 

@@ -1,0 +1,14 @@
+---
+description: Convenciones de backend Express para seguridad y trazabilidad
+globs: server/**/*.js
+alwaysApply: false
+---
+
+# Backend API (Express)
+
+- Exige sesión para endpoints privados; deja públicos solo `health` y `auth`.
+- Valida input con esquema antes de lógica de negocio.
+- Responde siempre JSON consistente (`{ ok/error, ... }`) y código HTTP correcto.
+- Loguea eventos relevantes con `requestId` y evita exponer stack al cliente.
+- Para cambios de auth, prueba cookie segura, login y logout.
+- Mantén compatibilidad Vercel (`module.exports = app` + listen solo en ejecución directa).

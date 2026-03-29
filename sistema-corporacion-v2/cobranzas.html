@@ -118,11 +118,11 @@
                         <div class="stat-icon"><i class="bi bi-briefcase"></i></div>
                     </div>
                     <div class="stat-info">
-                        <h3>S/ 18,450</h3>
+                        <h3 id="cobranzaKpiCartera">S/ 0.00</h3>
                         <p>Cartera en seguimiento</p>
-                        <div class="stat-trend">
-                            <i class="bi bi-arrow-up"></i>
-                            <span>+6% mensual</span>
+                        <div class="stat-trend" id="cobranzaKpiCarteraTrend">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Suma de saldos (no cerrados)</span>
                         </div>
                     </div>
                 </div>
@@ -131,11 +131,11 @@
                         <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
                     </div>
                     <div class="stat-info">
-                        <h3>9</h3>
+                        <h3 id="cobranzaKpiCriticos">0</h3>
                         <p>Casos críticos</p>
-                        <div class="stat-trend" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c;">
+                        <div class="stat-trend" id="cobranzaKpiCriticosTrend" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c;">
                             <i class="bi bi-exclamation-circle"></i>
-                            <span>Atención inmediata</span>
+                            <span id="cobranzaKpiCriticosDesc">Mora &gt;= 21 días o estado urgente</span>
                         </div>
                     </div>
                 </div>
@@ -144,11 +144,11 @@
                         <div class="stat-icon"><i class="bi bi-chat-square-text"></i></div>
                     </div>
                     <div class="stat-info">
-                        <h3>24</h3>
-                        <p>Contactos realizados</p>
-                        <div class="stat-trend">
-                            <i class="bi bi-arrow-up"></i>
-                            <span>Últimos 7 días</span>
+                        <h3 id="cobranzaKpiContactos">0</h3>
+                        <p>Gestiones registradas (7 días)</p>
+                        <div class="stat-trend" id="cobranzaKpiContactosTrend">
+                            <i class="bi bi-calendar-week"></i>
+                            <span id="cobranzaKpiContactosDesc">Según fecha de registro</span>
                         </div>
                     </div>
                 </div>
@@ -182,11 +182,12 @@
             <div id="addCobranzaModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2><i class="bi bi-clipboard-plus"></i> Registrar gestión</h2>
+                        <h2 id="cobranzaModalTitle"><i class="bi bi-clipboard-plus"></i> Registrar gestión</h2>
                         <button class="close-btn" onclick="closeModal('addCobranzaModal')" type="button">&times;</button>
                     </div>
                     <div class="modal-body">
                         <form id="cobranzaForm">
+                            <input type="hidden" id="cobranzaId" value="">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="cobranzaCliente">Cliente</label>

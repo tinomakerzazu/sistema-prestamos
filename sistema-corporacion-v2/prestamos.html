@@ -144,11 +144,12 @@
             <div id="addPrestamoModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2><i class="bi bi-cash-coin"></i> Nuevo prestamo</h2>
+                        <h2 id="prestamoModalTitle"><i class="bi bi-cash-coin"></i> Nuevo prestamo</h2>
                         <button class="close-btn" onclick="closeModal('addPrestamoModal')" type="button">&times;</button>
                     </div>
                     <div class="modal-body">
                         <form id="prestamoForm">
+                            <input type="hidden" id="prestamoEditId" value="">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="prestamoCliente">Cliente</label>

@@ -97,6 +97,13 @@ const Storage = {
             body: JSON.stringify({ prestamoId })
         });
     },
+    async enviarRecordatorioEmail(prestamoId) {
+        return apiRequest('/recordatorios/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prestamoId })
+        });
+    },
     async getPagos() {
         return apiRequest('/pagos');
     },

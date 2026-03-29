@@ -118,11 +118,11 @@
                         <div class="stat-icon"><i class="bi bi-bell"></i></div>
                     </div>
                     <div class="stat-info">
-                        <h3>12</h3>
-                        <p>Alertas activas</p>
-                        <div class="stat-trend">
-                            <i class="bi bi-arrow-up"></i>
-                            <span>+4 esta semana</span>
+                        <h3 id="calKpiTotal">0</h3>
+                        <p>Eventos registrados</p>
+                        <div class="stat-trend" id="calKpiTotalTrend">
+                            <i class="bi bi-info-circle"></i>
+                            <span>Total en calendario</span>
                         </div>
                     </div>
                 </div>
@@ -131,11 +131,11 @@
                         <div class="stat-icon"><i class="bi bi-calendar-check"></i></div>
                     </div>
                     <div class="stat-info">
-                        <h3>6</h3>
-                        <p>Pagos programados</p>
-                        <div class="stat-trend">
-                            <i class="bi bi-arrow-down"></i>
-                            <span>-2 vs. semana anterior</span>
+                        <h3 id="calKpiPagos">0</h3>
+                        <p>Eventos tipo &quot;Pago&quot;</p>
+                        <div class="stat-trend" id="calKpiPagosTrend">
+                            <i class="bi bi-cash"></i>
+                            <span>Desde datos reales</span>
                         </div>
                     </div>
                 </div>
@@ -144,11 +144,11 @@
                         <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
                     </div>
                     <div class="stat-info">
-                        <h3>3</h3>
-                        <p>Vencimientos hoy</p>
-                        <div class="stat-trend">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span>Revisar urgentes</span>
+                        <h3 id="calKpiHoy">0</h3>
+                        <p>Eventos con fecha de hoy</p>
+                        <div class="stat-trend" id="calKpiHoyTrend">
+                            <i class="bi bi-calendar-day"></i>
+                            <span>Según zona horaria local</span>
                         </div>
                     </div>
                 </div>
@@ -202,11 +202,12 @@
             <div id="addEventoModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2><i class="bi bi-calendar-plus"></i> Nuevo evento</h2>
+                        <h2 id="eventoModalTitle"><i class="bi bi-calendar-plus"></i> Nuevo evento</h2>
                         <button class="close-btn" onclick="closeModal('addEventoModal')" type="button">&times;</button>
                     </div>
                     <div class="modal-body">
                         <form id="eventoForm">
+                            <input type="hidden" id="eventoEditId" value="">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="eventoFecha">Fecha</label>

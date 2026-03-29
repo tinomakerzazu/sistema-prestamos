@@ -1,0 +1,13 @@
+---
+description: Reglas globales para cambios seguros en producción
+alwaysApply: true
+---
+
+# Estándar Global de Producción
+
+- Mantén cambios acotados al objetivo solicitado; evita refactors no pedidos.
+- Nunca subas secretos (`.env`, credenciales, tokens) ni datos sensibles reales.
+- Después de cambios sustantivos, ejecuta `npm run check` en la raíz.
+- Si tocas backend en `server/`, valida login, `/api/health` y al menos un endpoint protegido.
+- Si tocas frontend en `sistema-corporacion-v2/js/`, verifica flujo de sesión y errores 401.
+- Conserva Netlify como respaldo: no lo actives por defecto en runtime.
