@@ -32,6 +32,7 @@ const generateReportBtn = document.getElementById('generateReportBtn');
 const clearReportFiltersBtn = document.getElementById('clearReportFiltersBtn');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
 const downloadResumenBtn = document.getElementById('downloadResumenBtn');
+const exportPdfBtn = document.getElementById('exportPdfBtn');
 
 let pagosCache = [];
 
@@ -303,6 +304,426 @@ function downloadResumen() {
     setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
+/* ============================================================
+   EXPORTAR PDF PREMIUM – NORSE KREDIT
+   ============================================================ */
+function exportReportPDF() {
+    const pagos = getFilteredPagos();
+    if (!pagos.length) {
+        showNotification('No hay datos para exportar a PDF', 'error');
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 18;
+    const contentW = pageW - margin * 2;
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
+    const timeStr = now.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
+    const periodoStr = `${reportStartDate.value || '-'} al ${reportEndDate.value || '-'}`;
+    const { total, count, average } = calculateTotals(pagos);
+    const uniqueClientes = new Set(pagos.map(p => p.cliente).filter(Boolean)).size;
+
+    // Colores corporativos
+    const NAVY      = [15, 22, 34];
+    const DARK_BLUE = [47, 95, 158];
+    const ACCENT    = [31, 158, 166];
+    const WHITE     = [255, 255, 255];
+    const LIGHT_BG  = [245, 247, 250];
+    const MEDIUM_BG = [230, 235, 242];
+    const TEXT_DARK  = [30, 40, 55];
+    const TEXT_MED   = [100, 110, 130];
+    const GOLD_DARK  = [47, 95, 158];
+
+    function addPageFooter(pageNum, totalPages) {
+        doc.setDrawColor(...MEDIUM_BG);
+        doc.setLineWidth(0.3);
+        doc.line(margin, pageH - 16, pageW - margin, pageH - 16);
+        doc.setFontSize(7.5);
+        doc.setTextColor(...TEXT_MED);
+        doc.text('Norse Kredit \u2022 Sistema de Gestión de Préstamos', margin, pageH - 11);
+        doc.text(`Generado: ${dateStr} a las ${timeStr}`, margin, pageH - 7);
+        doc.text(`Página ${pageNum} de ${totalPages}`, pageW - margin, pageH - 9, { align: 'right' });
+    }
+
+    // ═══════════════════════════════════════════
+    //  ENCABEZADO PRINCIPAL
+    // ═══════════════════════════════════════════
+    // Fondo navy top
+    doc.setFillColor(...NAVY);
+    doc.rect(0, 0, pageW, 52, 'F');
+
+    // Línea decorativa accent
+    doc.setFillColor(...ACCENT);
+    doc.rect(0, 52, pageW, 1.5, 'F');
+
+    // Logotipo texto
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.setTextColor(...WHITE);
+    doc.text('NORSE KREDIT', margin, 20);
+
+    // Subtitulo
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(170, 190, 220);
+    doc.text('Sistema de Gestión de Préstamos', margin, 27);
+
+    // Título del reporte
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.setTextColor(...WHITE);
+    doc.text('REPORTE FINANCIERO', margin, 38);
+
+    // Periodo y fecha
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(170, 190, 220);
+    doc.text(`Periodo: ${periodoStr}`, margin, 45);
+    doc.text(dateStr, pageW - margin, 45, { align: 'right' });
+
+    // ═══════════════════════════════════════════
+    //  TARJETAS KPI
+    // ═══════════════════════════════════════════
+    let y = 62;
+    const kpiLabels = ['Total cobrado', 'Pagos registrados', 'Ticket promedio', 'Clientes activos'];
+    const kpiValues = [formatMoney(total), String(count), formatMoney(average), String(uniqueClientes)];
+    const cardW = (contentW - 9) / 4;
+
+    for (let i = 0; i < 4; i++) {
+        const cardX = margin + i * (cardW + 3);
+
+        // Sombra
+        doc.setFillColor(220, 225, 235);
+        doc.roundedRect(cardX + 0.5, y + 0.5, cardW, 26, 3, 3, 'F');
+
+        // Card blanca
+        doc.setFillColor(...WHITE);
+        doc.roundedRect(cardX, y, cardW, 26, 3, 3, 'F');
+
+        // Borde superior accent
+        const kpiColors = [DARK_BLUE, ACCENT, [100, 130, 180], [80, 160, 120]];
+        doc.setFillColor(...kpiColors[i]);
+        doc.rect(cardX, y, cardW, 2.5, 'F');
+
+        // Label
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...TEXT_MED);
+        doc.text(kpiLabels[i], cardX + cardW / 2, y + 10, { align: 'center' });
+
+        // Value
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(...TEXT_DARK);
+        doc.text(kpiValues[i], cardX + cardW / 2, y + 20, { align: 'center' });
+    }
+
+    // ═══════════════════════════════════════════
+    //  SECCIÓN: DISTRIBUCIÓN POR MÉTODO
+    // ═══════════════════════════════════════════
+    y = 98;
+
+    // Título sección
+    doc.setFillColor(...LIGHT_BG);
+    doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK_BLUE);
+    doc.text('\u25C6  DISTRIBUCIÓN POR MÉTODO DE PAGO', margin + 4, y + 6.5);
+
+    y += 14;
+
+    const metodoOrder = ['Efectivo', 'Transferencia', 'Tarjeta', 'Yape/Plin'];
+    const metodoCounts = metodoOrder.reduce((acc, m) => {
+        acc[m] = pagos.filter(p => p.metodo === m).length;
+        return acc;
+    }, {});
+    const metodoTotal = Object.values(metodoCounts).reduce((s, v) => s + v, 0) || 1;
+    const metodoMontos = metodoOrder.reduce((acc, m) => {
+        acc[m] = pagos.filter(p => p.metodo === m).reduce((s, p) => s + parseFloat(p.monto || 0), 0);
+        return acc;
+    }, {});
+    const barColors = [[47, 95, 158], [31, 158, 166], [100, 130, 180], [140, 100, 180]];
+
+    for (let i = 0; i < metodoOrder.length; i++) {
+        const metodo = metodoOrder[i];
+        const pct = Math.round((metodoCounts[metodo] / metodoTotal) * 100);
+        const barW = Math.max((pct / 100) * (contentW - 80), 2);
+
+        // Label
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8.5);
+        doc.setTextColor(...TEXT_DARK);
+        doc.text(metodo, margin + 2, y + 4);
+
+        // Barra fondo
+        doc.setFillColor(...LIGHT_BG);
+        doc.roundedRect(margin + 40, y, contentW - 80, 5.5, 1.5, 1.5, 'F');
+
+        // Barra valor
+        doc.setFillColor(...barColors[i]);
+        doc.roundedRect(margin + 40, y, barW, 5.5, 1.5, 1.5, 'F');
+
+        // Porcentaje y monto
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(...TEXT_DARK);
+        doc.text(`${pct}%`, pageW - margin - 22, y + 4, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...TEXT_MED);
+        doc.text(formatMoney(metodoMontos[metodo]), pageW - margin, y + 4, { align: 'right' });
+
+        y += 9;
+    }
+
+    // ═══════════════════════════════════════════
+    //  SECCIÓN: TOP 5 CLIENTES
+    // ═══════════════════════════════════════════
+    y += 4;
+    doc.setFillColor(...LIGHT_BG);
+    doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK_BLUE);
+    doc.text('\u25C6  TOP 5 CLIENTES', margin + 4, y + 6.5);
+
+    y += 13;
+
+    const clienteTotals = pagos.reduce((acc, p) => {
+        const c = p.cliente || 'Sin nombre';
+        acc[c] = (acc[c] || 0) + parseFloat(p.monto || 0);
+        return acc;
+    }, {});
+    const topClientes = Object.entries(clienteTotals).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+    if (topClientes.length) {
+        for (let i = 0; i < topClientes.length; i++) {
+            const [nombre, monto] = topClientes[i];
+            const isEven = i % 2 === 0;
+
+            if (isEven) {
+                doc.setFillColor(248, 250, 252);
+                doc.rect(margin, y - 3.5, contentW, 8, 'F');
+            }
+
+            // Ranking
+            doc.setFillColor(...DARK_BLUE);
+            doc.circle(margin + 5, y, 3, 'F');
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(...WHITE);
+            doc.text(String(i + 1), margin + 5, y + 1, { align: 'center' });
+
+            // Nombre
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9);
+            doc.setTextColor(...TEXT_DARK);
+            doc.text(nombre, margin + 12, y + 1);
+
+            // Monto
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(9);
+            doc.setTextColor(...DARK_BLUE);
+            doc.text(formatMoney(monto), pageW - margin, y + 1, { align: 'right' });
+
+            y += 8;
+        }
+    } else {
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(9);
+        doc.setTextColor(...TEXT_MED);
+        doc.text('No hay clientes en este periodo', margin + 4, y);
+        y += 8;
+    }
+
+    // ═══════════════════════════════════════════
+    //  SECCIÓN: FLUJO MENSUAL
+    // ═══════════════════════════════════════════
+    y += 6;
+
+    if (y > pageH - 80) {
+        doc.addPage();
+        y = 20;
+    }
+
+    doc.setFillColor(...LIGHT_BG);
+    doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK_BLUE);
+    doc.text('\u25C6  FLUJO MENSUAL (ÚLTIMOS 6 MESES)', margin + 4, y + 6.5);
+
+    y += 14;
+
+    const series = getMonthlySeries(pagos);
+    const maxVal = Math.max(...series.map(s => s.total), 1);
+    const chartH = 30;
+    const chartBarW = (contentW - 20) / series.length;
+
+    for (let i = 0; i < series.length; i++) {
+        const barH = Math.max((series[i].total / maxVal) * chartH, 1);
+        const bx = margin + 10 + i * chartBarW;
+
+        // Barra
+        doc.setFillColor(...DARK_BLUE);
+        doc.roundedRect(bx + 2, y + chartH - barH, chartBarW - 8, barH, 1.5, 1.5, 'F');
+
+        // Label mes
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(7);
+        doc.setTextColor(...TEXT_MED);
+        doc.text(series[i].label, bx + (chartBarW - 4) / 2, y + chartH + 5, { align: 'center' });
+
+        // Monto encima de la barra
+        if (series[i].total > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(6.5);
+            doc.setTextColor(...TEXT_DARK);
+            doc.text(formatMoney(series[i].total), bx + (chartBarW - 4) / 2, y + chartH - barH - 2, { align: 'center' });
+        }
+    }
+
+    y += chartH + 12;
+
+    // ═══════════════════════════════════════════
+    //  TABLA DE PAGOS DETALLADA
+    // ═══════════════════════════════════════════
+    if (y > pageH - 60) {
+        doc.addPage();
+        y = 20;
+    }
+
+    doc.setFillColor(...LIGHT_BG);
+    doc.roundedRect(margin, y, contentW, 9, 2, 2, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...DARK_BLUE);
+    doc.text('\u25C6  DETALLE DE PAGOS', margin + 4, y + 6.5);
+
+    y += 12;
+
+    const sortedPagos = [...pagos].sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    doc.autoTable({
+        startY: y,
+        margin: { left: margin, right: margin },
+        head: [['#', 'Fecha', 'Cliente', 'Método', 'Referencia', 'Monto', 'Estado']],
+        body: sortedPagos.map((pago, i) => [
+            String(i + 1),
+            formatDate(pago.fecha),
+            pago.cliente || '-',
+            pago.metodo || '-',
+            pago.referencia || '-',
+            formatMoney(pago.monto),
+            pago.estado || 'Registrado'
+        ]),
+        styles: {
+            font: 'helvetica',
+            fontSize: 8,
+            cellPadding: 3,
+            lineColor: [220, 225, 235],
+            lineWidth: 0.2,
+            textColor: TEXT_DARK,
+            overflow: 'linebreak'
+        },
+        headStyles: {
+            fillColor: NAVY,
+            textColor: WHITE,
+            fontStyle: 'bold',
+            fontSize: 7.5,
+            halign: 'center',
+            cellPadding: 3.5
+        },
+        bodyStyles: {
+            halign: 'left'
+        },
+        alternateRowStyles: {
+            fillColor: [248, 250, 252]
+        },
+        columnStyles: {
+            0: { halign: 'center', cellWidth: 10 },
+            1: { cellWidth: 24 },
+            2: { cellWidth: 'auto' },
+            3: { cellWidth: 26 },
+            4: { cellWidth: 24 },
+            5: { halign: 'right', cellWidth: 26, fontStyle: 'bold' },
+            6: { halign: 'center', cellWidth: 22 }
+        },
+        didParseCell: function(data) {
+            if (data.section === 'body' && data.column.index === 6) {
+                const estado = data.cell.raw;
+                if (estado === 'Aplicado') {
+                    data.cell.styles.textColor = [22, 130, 75];
+                    data.cell.styles.fontStyle = 'bold';
+                } else if (estado === 'Observado') {
+                    data.cell.styles.textColor = [200, 80, 30];
+                    data.cell.styles.fontStyle = 'bold';
+                } else {
+                    data.cell.styles.textColor = DARK_BLUE;
+                }
+            }
+        },
+        didDrawPage: function() {}
+    });
+
+    // ═══════════════════════════════════════════
+    //  RESUMEN AL FINAL
+    // ═══════════════════════════════════════════
+    const finalY = doc.lastAutoTable.finalY + 8;
+    const totalPages = doc.internal.getNumberOfPages();
+
+    if (finalY < pageH - 40) {
+        // Línea separadora
+        doc.setDrawColor(...MEDIUM_BG);
+        doc.setLineWidth(0.3);
+        doc.line(margin, finalY, pageW - margin, finalY);
+
+        // Resumen final
+        const summaryY = finalY + 8;
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(margin, summaryY - 4, contentW, 22, 3, 3, 'F');
+        doc.setDrawColor(...DARK_BLUE);
+        doc.setLineWidth(0.4);
+        doc.roundedRect(margin, summaryY - 4, contentW, 22, 3, 3, 'S');
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...DARK_BLUE);
+        doc.text('RESUMEN TOTAL', margin + 5, summaryY + 3);
+
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(...TEXT_DARK);
+        doc.text(`${count} pagos registrados`, margin + 5, summaryY + 10);
+        doc.text(`${uniqueClientes} clientes activos`, margin + 55, summaryY + 10);
+        doc.text(`Promedio: ${formatMoney(average)}`, margin + 105, summaryY + 10);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(13);
+        doc.setTextColor(...DARK_BLUE);
+        doc.text(formatMoney(total), pageW - margin - 5, summaryY + 8, { align: 'right' });
+    }
+
+    // ═══════════════════════════════════════════
+    //  PAGINACIÓN Y FOOTERS
+    // ═══════════════════════════════════════════
+    const updatedTotalPages = doc.internal.getNumberOfPages();
+    for (let p = 1; p <= updatedTotalPages; p++) {
+        doc.setPage(p);
+        addPageFooter(p, updatedTotalPages);
+    }
+
+    // Guardar
+    const fileName = `NorseKredit_Reporte_${now.toISOString().slice(0, 10)}.pdf`;
+    doc.save(fileName);
+    showNotification(`PDF descargado: ${fileName}`, 'success');
+}
+
 async function loadPagos() {
     try {
         pagosCache = await Storage.getPagos();
@@ -329,6 +750,9 @@ if (exportCsvBtn) {
 }
 if (downloadResumenBtn) {
     downloadResumenBtn.addEventListener('click', downloadResumen);
+}
+if (exportPdfBtn) {
+    exportPdfBtn.addEventListener('click', exportReportPDF);
 }
 
 setDefaultRange();

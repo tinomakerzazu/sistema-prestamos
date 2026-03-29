@@ -110,7 +110,10 @@
                         Resumen financiero, comportamiento de pagos y métricas clave del negocio.
                     </p>
                     <div class="hero-actions">
-                        <button class="btn btn-primary" id="exportCsvBtn" type="button">
+                        <button class="btn btn-primary" id="exportPdfBtn" type="button">
+                            <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+                        </button>
+                        <button class="btn btn-secondary" id="exportCsvBtn" type="button">
                             <i class="bi bi-download"></i> Exportar CSV
                         </button>
                         <button class="btn btn-secondary" id="downloadResumenBtn" type="button">
@@ -259,6 +262,8 @@
         </main>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/reportes.js"></script>
 </body>
