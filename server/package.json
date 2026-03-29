@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "sistema-corporacion-server",
   "version": "1.0.0",
   "description": "Backend para guardar clientes, prestamos y pagos con comprobantes.",
@@ -6,10 +6,28 @@
   "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "lint": "eslint \"server.js\" \"tests/**/*.js\"",
+    "test": "node --test",
+    "check": "npm run lint && npm run test"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "express-rate-limit": "^7.4.1",
     "express": "^4.19.2",
-    "multer": "^1.4.5-lts.1"
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.10.1",
+    "@supabase/supabase-js": "^2.45.4",
+    "twilio": "^5.0.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.20.1",
+    "globals": "^15.14.0",
+    "supertest": "^7.1.0"
   }
 }

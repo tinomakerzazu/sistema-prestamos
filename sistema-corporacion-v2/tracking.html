@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Norse Kredit</title>
+    <title>Tracking en vivo - Norse Kredit</title>
     <link rel="icon" href="img/icono.png" type="image/png">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 </head>
-<body class="app-shell">
-    <div class="reveal-overlay" aria-hidden="true" role="presentation"></div>
+<body class="app-shell page-tracking">
     <nav class="navbar">
         <div class="navbar-brand">
             <img src="img/icono.png" alt="Norse Kredit" class="navbar-logo">
@@ -36,7 +37,7 @@
             <ul class="menu">
                 <li class="menu-section"><span class="menu-title">Operaciones</span></li>
                 <li class="menu-item">
-                    <a href="dashboard.html" class="menu-link active">
+                    <a href="dashboard.html" class="menu-link">
                         <i class="bi bi-house-door menu-icon"></i>
                         <span class="menu-text">Dashboard</span>
                     </a>
@@ -51,7 +52,7 @@
                 <li class="menu-item">
                     <a href="prestamos.html" class="menu-link">
                         <i class="bi bi-cash-stack menu-icon"></i>
-                        <span class="menu-text">Préstamos</span>
+                        <span class="menu-text">Prestamos</span>
                         <span class="menu-badge" id="prestamosBadge">0</span>
                     </a>
                 </li>
@@ -61,7 +62,7 @@
                         <span class="menu-text">Pagos</span>
                     </a>
                 </li>
-                <li class="menu-section"><span class="menu-title">Gestión</span></li>
+                <li class="menu-section"><span class="menu-title">Gestion</span></li>
                 <li class="menu-item">
                     <a href="cobranzas.html" class="menu-link">
                         <i class="bi bi-cash-coin menu-icon"></i>
@@ -75,7 +76,7 @@
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a href="tracking.html" class="menu-link">
+                    <a href="tracking.html" class="menu-link active">
                         <i class="bi bi-broadcast menu-icon"></i>
                         <span class="menu-text">Tracking</span>
                     </a>
@@ -96,7 +97,7 @@
                 <li class="menu-item">
                     <a href="configuracion.html" class="menu-link">
                         <i class="bi bi-gear menu-icon"></i>
-                        <span class="menu-text">Configuración</span>
+                        <span class="menu-text">Configuracion</span>
                     </a>
                 </li>
             </ul>
@@ -105,98 +106,87 @@
         <main class="main-content">
             <div class="page-header">
                 <div>
-                    <h1><i class="bi bi-house-door"></i> Panel de control</h1>
-                    <p class="page-subtitle">
-                        Bienvenido al sistema corporativo · <span id="currentDate"></span>
-                    </p>
+                    <h1><i class="bi bi-broadcast"></i> Tracking en vivo</h1>
+                    <p class="page-subtitle">Actualizacion cada 10 segundos con ubicacion en tiempo real.</p>
+                </div>
+                <div class="page-header-actions">
+                    <button id="refreshTrackingBtn" class="btn btn-secondary btn-sm" type="button">
+                        <i class="bi bi-arrow-repeat"></i> Actualizar
+                    </button>
+                    <button id="toggleTrackingBtn" class="btn btn-secondary btn-sm" type="button" data-state="on">
+                        <i class="bi bi-pause-circle"></i> Pausar
+                    </button>
                 </div>
             </div>
 
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">
-                            <i class="bi bi-people"></i>
-                        </div>
-                    </div>
-                    <div class="stat-info">
-                        <h3 id="totalClientes">0</h3>
-                        <p>Total clientes</p>
-                        <div class="stat-trend" id="clientesTrend">
-                            <i class="bi bi-arrow-up"></i>
-                            <span>--</span>
-                        </div>
-                    </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-activity"></i> Estado general</h3>
                 </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">
-                            <i class="bi bi-check-circle"></i>
+                <div class="card-body tracking-summary">
+                    <div class="kpi-grid tracking-kpis">
+                        <div class="kpi-card">
+                            <p>Clientes con senal</p>
+                            <h2 id="trackingOnline">0</h2>
+                            <span class="kpi-change positive">En linea</span>
+                        </div>
+                        <div class="kpi-card">
+                            <p>Clientes sin senal</p>
+                            <h2 id="trackingOffline">0</h2>
+                            <span class="kpi-change">Sin actualizacion</span>
+                        </div>
+                        <div class="kpi-card">
+                            <p>Ultima actualizacion</p>
+                            <h2 id="trackingLastUpdate">--</h2>
+                            <span class="kpi-change" id="trackingLastDelta">Esperando datos</span>
+                        </div>
+                        <div class="kpi-card">
+                            <p>Total monitoreados</p>
+                            <h2 id="trackingTotal">0</h2>
+                            <span class="kpi-change">Clientes</span>
                         </div>
                     </div>
-                    <div class="stat-info">
-                        <h3 id="prestamosActivos">0</h3>
-                        <p>Préstamos activos</p>
-                        <div class="stat-trend" id="prestamosActivosTrend">
-                            <i class="bi bi-arrow-up"></i>
-                            <span>--</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">
-                            <i class="bi bi-cash-stack"></i>
-                        </div>
-                    </div>
-                    <div class="stat-info">
-                        <h3 id="capitalPrestado">S/ 0.00</h3>
-                        <p>Capital prestado</p>
-                        <div class="stat-trend" id="capitalTrend">
-                            <i class="bi bi-arrow-up"></i>
-                            <span>--</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stat-card">
-                    <div class="stat-card-header">
-                        <div class="stat-icon">
-                            <i class="bi bi-exclamation-triangle"></i>
-                        </div>
-                    </div>
-                    <div class="stat-info">
-                        <h3 id="prestamosVencidos">0</h3>
-                        <p>Préstamos vencidos</p>
-                        <div class="stat-trend" id="prestamosVencidosTrend" style="background: rgba(231, 76, 60, 0.1); color: #e74c3c;">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span>--</span>
-                        </div>
+                    <div class="map-coords">
+                        <span id="trackingStatus">Conectando con el servicio de ubicaciones...</span>
+                        <span class="tracking-hint">La app debe enviar ubicaciones a /api/tracking o /.netlify/functions/tracking.</span>
                     </div>
                 </div>
             </div>
 
-            <div class="content-grid">
+            <section class="tracking-layout">
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-clock-history"></i> Próximos vencimientos</h3>
+                        <h3><i class="bi bi-list-check"></i> Clientes en seguimiento</h3>
                     </div>
                     <div class="card-body">
-                        <div style="overflow-x: auto;">
-                            <table class="table" id="proximosVencerTable">
+                        <div class="filters-row tracking-filters">
+                            <div class="form-group">
+                                <label for="trackingSearch">Buscar</label>
+                                <input type="text" id="trackingSearch" class="form-control" placeholder="Cliente o DNI">
+                            </div>
+                            <div class="form-group">
+                                <label for="trackingStatusFilter">Estado</label>
+                                <select id="trackingStatusFilter" class="form-control">
+                                    <option value="">Todos</option>
+                                    <option value="online">En linea</option>
+                                    <option value="offline">Sin senal</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-wrap">
+                            <table class="table">
                                 <thead>
                                     <tr>
                                         <th>Cliente</th>
-                                        <th>Monto</th>
-                                        <th>Vencimiento</th>
-                                        <th>Días</th>
+                                        <th>Estado</th>
+                                        <th>Ultima senal</th>
+                                        <th>Precision</th>
+                                        <th>Lat / Lng</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody id="trackingTableBody">
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted">No hay préstamos próximos a vencer</td>
+                                        <td colspan="5" class="text-center text-muted">Esperando ubicaciones...</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -206,21 +196,33 @@
 
                 <div class="card">
                     <div class="card-header">
-                        <h3><i class="bi bi-receipt"></i> Actividad reciente</h3>
+                        <h3><i class="bi bi-geo-alt"></i> Mapa en vivo</h3>
                     </div>
                     <div class="card-body">
-                        <div id="pagosRecientesList" class="list-group">
-                            <div class="list-item text-center text-muted">
-                                No hay actividad reciente
-                            </div>
+                        <div class="map-actions">
+                            <button type="button" class="btn btn-secondary btn-sm" id="centerMapBtn">
+                                <i class="bi bi-compass"></i> Centrar
+                            </button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="fitMapBtn">
+                                <i class="bi bi-arrows-fullscreen"></i> Ver todos
+                            </button>
+                        </div>
+                        <div class="map-box map-live tracking-map" id="trackingMap">
+                            <div class="map-grid"></div>
+                        </div>
+                        <div class="map-coords tracking-meta">
+                            <span id="trackingMapStatus">Mapa listo para recibir ubicaciones.</span>
+                            <span id="trackingSelected">Selecciona un cliente para ver detalles.</span>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
         </main>
     </div>
 
     <script src="js/storage.js"></script>
-    <script src="js/dashboard.js"></script>
+    <script src="js/tracking.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </body>
 </html>

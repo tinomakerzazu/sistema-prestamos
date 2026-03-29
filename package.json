@@ -2,7 +2,20 @@
   "name": "sistema-corporacion-netlify",
   "version": "1.0.0",
   "type": "commonjs",
+  "scripts": {
+    "lint": "eslint \"sistema-corporacion-v2/js/**/*.js\"",
+    "test": "npm --prefix server test",
+    "check": "npm run lint && npm --prefix server run check",
+    "supabase:purge": "node scripts/supabase-purge.js",
+    "format": "prettier --write \"sistema-corporacion-v2/js/**/*.js\" \"server/**/*.js\"",
+    "format:check": "prettier --check \"sistema-corporacion-v2/js/**/*.js\" \"server/**/*.js\""
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4"
+  },
+  "devDependencies": {
+    "eslint": "^9.20.1",
+    "globals": "^15.14.0",
+    "prettier": "^3.5.3"
   }
 }

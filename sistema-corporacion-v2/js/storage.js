@@ -1,10 +1,44 @@
-﻿const API_BASE = '/.netlify/functions';
+// Vercel-first: usar /api por defecto.
+function getApiBase() {
+    const host = window.location.hostname;
+    const port = window.location.port;
+    const isLocal = host === 'localhost' || host === '127.0.0.1';
+    if (isLocal) {
+        if (port && port !== '3000') {
+            return `${window.location.protocol}//${host}:3000/api`;
+        }
+        return '/api';
+    }
+    return window.__API_BASE__ || '/api';
+}
+const API_BASE = getApiBase();
 
 async function apiRequest(path, options = {}) {
-    const response = await fetch(`${API_BASE}${path}`, options);
+    const url = `${API_BASE}${path}`;
+    const requestOptions = {
+        credentials: 'include',
+        ...options
+    };
+    const response = await fetch(url, requestOptions);
     if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || 'Error de servidor');
+        let message = 'Error de servidor';
+        try {
+            const payload = await response.json();
+            message = payload.error || payload.message || message;
+        } catch (_) {
+            const text = await response.text();
+            message = text || message;
+        }
+
+        if (response.status === 401) {
+            sessionStorage.removeItem('isLoggedIn');
+            sessionStorage.removeItem('userName');
+            if (!window.location.pathname.endsWith('/index.html') && !window.location.pathname.endsWith('/')) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        throw new Error(message);
     }
 
     const contentType = response.headers.get('content-type') || '';
@@ -55,6 +89,13 @@ const Storage = {
     },
     async deletePrestamo(id) {
         return apiRequest(`/prestamos/${id}`, { method: 'DELETE' });
+    },
+    async enviarRecordatorioSMS(prestamoId) {
+        return apiRequest('/recordatorios/enviar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prestamoId })
+        });
     },
     async getPagos() {
         return apiRequest('/pagos');
@@ -148,16 +189,53 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString('es-PE');
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function sanitizeLink(url) {
+    if (!url) return null;
+    const raw = String(url).trim();
+    if (raw.startsWith('/')) return raw;
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return null;
+}
+
+function escapeCsvValue(value) {
+    return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
 function logout() {
     if (confirm('¿Desea cerrar sesión?')) {
-        sessionStorage.removeItem('isLoggedIn');
-        window.location.href = 'index.html';
+        fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' })
+            .catch(() => null)
+            .finally(() => {
+                sessionStorage.removeItem('isLoggedIn');
+                sessionStorage.removeItem('userName');
+                window.location.href = 'index.html';
+            });
     }
 }
 
-function checkAuth() {
+async function checkAuth() {
     if (!sessionStorage.getItem('isLoggedIn')) {
         window.location.href = 'index.html';
+        return false;
+    }
+
+    try {
+        await apiRequest('/auth/me');
+        return true;
+    } catch (_) {
+        sessionStorage.removeItem('isLoggedIn');
+        sessionStorage.removeItem('userName');
+        window.location.href = 'index.html';
+        return false;
     }
 }
 
@@ -174,7 +252,10 @@ function closeModal(modalId) {
 function showNotification(message, type = 'success') {
     const notif = document.createElement('div');
     notif.className = `notification ${type}`;
-    notif.innerHTML = `<i class="bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-circle-fill'}"></i> ${message}`;
+    const icon = document.createElement('i');
+    icon.className = `bi bi-${type === 'success' ? 'check-circle-fill' : 'exclamation-circle-fill'}`;
+    notif.appendChild(icon);
+    notif.appendChild(document.createTextNode(` ${String(message ?? '')}`));
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 3000);
 }
@@ -235,3 +316,7 @@ document.addEventListener('click', (e) => {
         e.target.classList.remove('active');
     }
 });
+
+window.escapeHtml = escapeHtml;
+window.sanitizeLink = sanitizeLink;
+window.escapeCsvValue = escapeCsvValue;

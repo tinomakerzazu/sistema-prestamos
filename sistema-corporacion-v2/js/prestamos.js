@@ -130,10 +130,10 @@ function renderCronograma(schedule) {
 
     cronogramaTableBody.innerHTML = schedule.map(item => `
         <tr>
-            <td>${item.numero}</td>
+            <td>${escapeHtml(item.numero)}</td>
             <td>${formatDate(item.fecha)}</td>
             <td>${formatMoney(item.monto)}</td>
-            <td>${item.estado}</td>
+            <td>${escapeHtml(item.estado)}</td>
         </tr>
     `).join('');
 }
@@ -164,20 +164,24 @@ function renderPrestamos() {
         const estado = prestamo.estado || 'activo';
         const badgeClass = getBadgeClass(estado);
         const cuota = prestamo.cuota ? formatMoney(prestamo.cuota) : '-';
+        const id = escapeHtml(prestamo.id);
         return `
             <tr>
-                <td>${prestamo.cliente || '-'}</td>
+                <td>${escapeHtml(prestamo.cliente || '-')}</td>
                 <td>${formatMoney(prestamo.montoPrestado)}</td>
-                <td>${prestamo.interes ? `${prestamo.interes}%` : '-'}</td>
-                <td>${prestamo.tiempoPaga || '-'}</td>
+                <td>${prestamo.interes ? `${escapeHtml(prestamo.interes)}%` : '-'}</td>
+                <td>${escapeHtml(prestamo.tiempoPaga || '-')}</td>
                 <td>${cuota}</td>
                 <td>${getProximoPago(prestamo)}</td>
-                <td><span class="badge ${badgeClass}">${estado}</span></td>
+                <td><span class="badge ${badgeClass}">${escapeHtml(estado)}</span></td>
                 <td>
-                    <button class="btn btn-info btn-sm" onclick="viewPrestamo('${prestamo.id}')" type="button">
+                    <button class="btn btn-info btn-sm js-view-prestamo" data-prestamo-id="${id}" type="button" title="Ver detalle">
                         <i class="bi bi-eye"></i>
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="deletePrestamo('${prestamo.id}')" type="button">
+                    <button class="btn btn-sm btn-enviar-sms js-sms-prestamo" data-prestamo-id="${id}" type="button" title="Enviar recordatorio por SMS al cliente">
+                        <i class="bi bi-chat-dots"></i> SMS
+                    </button>
+                    <button class="btn btn-danger btn-sm js-delete-prestamo" data-prestamo-id="${id}" type="button" title="Eliminar">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -194,6 +198,41 @@ async function syncPrestamos() {
     } catch (err) {
         console.error(err);
         showNotification('No se pudieron cargar los prestamos', 'error');
+    }
+}
+
+async function enviarSMSRecordatorio(prestamoId) {
+    if (!prestamoId) return;
+    try {
+        const result = await Storage.enviarRecordatorioSMS(prestamoId);
+        if (result && result.ok) {
+            showNotification('SMS de recordatorio enviado al cliente', 'success');
+        } else {
+            showNotification(result?.message || 'SMS enviado', 'success');
+        }
+    } catch (err) {
+        const msg = err.message || '';
+        try {
+            const data = JSON.parse(msg);
+            if (data && data.configured === false) {
+                showNotification('SMS no configurado. Configure Twilio en el servidor.', 'error');
+                return;
+            }
+            if (data && data.error) {
+                showNotification(data.error, 'error');
+                return;
+            }
+        } catch (_) {}
+        if (msg.includes('SMS no configurado') || msg.includes('TWILIO')) {
+            showNotification('SMS no configurado. Configure Twilio en el servidor.', 'error');
+            return;
+        }
+        if (msg.includes('numero') && msg.includes('valido')) {
+            showNotification('El cliente no tiene un número de teléfono válido.', 'error');
+            return;
+        }
+        console.error(err);
+        showNotification(msg || 'No se pudo enviar el SMS', 'error');
     }
 }
 
@@ -232,7 +271,7 @@ function viewPrestamo(id) {
             .join('\n');
     }
 
-    alert(message);
+    showNotification(message, 'success');
 }
 
 async function loadClientesForSelect() {
@@ -252,7 +291,7 @@ async function loadClientesForSelect() {
             const label = cliente.dni
                 ? `${cliente.dni} - ${nombreCompleto}`
                 : nombreCompleto || 'Cliente sin nombre';
-            options.push(`<option value="${nombreCompleto}">${label}</option>`);
+            options.push(`<option value="${escapeHtml(cliente.id)}" data-name="${escapeHtml(nombreCompleto || '')}">${escapeHtml(label)}</option>`);
         });
 
         prestamoClienteSelect.innerHTML = options.join('');
@@ -274,8 +313,10 @@ prestamoForm.addEventListener('submit', async (e) => {
         return;
     }
 
-    const clienteSeleccionado = prestamoClienteSelect.value.trim();
-    if (!clienteSeleccionado) {
+    const clienteId = prestamoClienteSelect.value.trim();
+    const opt = prestamoClienteSelect.selectedOptions[0];
+    const clienteNombre = opt ? opt.getAttribute('data-name') || opt.textContent : '';
+    if (!clienteId) {
         showNotification('Selecciona un cliente', 'error');
         return;
     }
@@ -286,7 +327,8 @@ prestamoForm.addEventListener('submit', async (e) => {
     const { total, cuota } = calculateTotals();
 
     const payload = {
-        cliente: clienteSeleccionado,
+        clienteId,
+        cliente: clienteNombre,
         montoPrestado,
         interes,
         tiempoPaga: getTiempoPaga(),
@@ -323,9 +365,32 @@ generarCronogramaBtn.addEventListener('click', () => {
     input.addEventListener('input', calculateTotals);
 });
 
+document.addEventListener('click', (event) => {
+    const viewBtn = event.target.closest('.js-view-prestamo');
+    if (viewBtn) {
+        const id = viewBtn.getAttribute('data-prestamo-id');
+        if (id) viewPrestamo(id);
+        return;
+    }
+
+    const smsBtn = event.target.closest('.js-sms-prestamo');
+    if (smsBtn) {
+        const id = smsBtn.getAttribute('data-prestamo-id');
+        if (id) enviarSMSRecordatorio(id);
+        return;
+    }
+
+    const deleteBtn = event.target.closest('.js-delete-prestamo');
+    if (deleteBtn) {
+        const id = deleteBtn.getAttribute('data-prestamo-id');
+        if (id) deletePrestamo(id);
+    }
+});
+
 window.showAddPrestamoModal = showAddPrestamoModal;
 window.viewPrestamo = viewPrestamo;
 window.deletePrestamo = deletePrestamo;
+window.enviarSMSRecordatorio = enviarSMSRecordatorio;
 
 setDefaultFecha();
 calculateTotals();

@@ -1,9 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calendario - Corporación</title>
+    <title>Calendario - Norse Kredit</title>
+    <link rel="icon" href="img/icono.png" type="image/png">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,8 +14,8 @@
 <body class="app-shell">
     <nav class="navbar">
         <div class="navbar-brand">
-            <i class="bi bi-shield-shaded"></i>
-            <span>CORPORACIÓN</span>
+            <img src="img/icono.png" alt="Norse Kredit" class="navbar-logo">
+            <span>NORSE KREDIT</span>
         </div>
         <div class="navbar-menu">
             <span class="user-info">
@@ -70,6 +71,12 @@
                     <a href="calendario.html" class="menu-link active">
                         <i class="bi bi-calendar-week menu-icon"></i>
                         <span class="menu-text">Calendario</span>
+                    </a>
+                </li>
+                <li class="menu-item">
+                    <a href="tracking.html" class="menu-link">
+                        <i class="bi bi-broadcast menu-icon"></i>
+                        <span class="menu-text">Tracking</span>
                     </a>
                 </li>
                 <li class="menu-item">
@@ -147,6 +154,26 @@
                 </div>
             </div>
 
+            <div class="avisos-panel card">
+                <div class="card-header">
+                    <h3><i class="bi bi-bell-fill"></i> Recordatorios y avisos</h3>
+                </div>
+                <div class="card-body avisos-grid">
+                    <div class="avisos-block">
+                        <h4><i class="bi bi-person-badge"></i> Para el admin (hoy)</h4>
+                        <p class="text-muted small">Eventos de hoy que requieren tu atención</p>
+                        <ul id="avisosAdminList" class="avisos-list"></ul>
+                        <p id="avisosAdminEmpty" class="text-muted small">No hay eventos para hoy</p>
+                    </div>
+                    <div class="avisos-block">
+                        <h4><i class="bi bi-person-check"></i> Pendientes de avisar al cliente</h4>
+                        <p class="text-muted small">Marcar como avisado cuando hayas notificado al cliente</p>
+                        <ul id="avisosClienteList" class="avisos-list"></ul>
+                        <p id="avisosClienteEmpty" class="text-muted small">Ninguno pendiente</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <h3><i class="bi bi-list-check"></i> Próximos eventos</h3>
@@ -212,6 +239,16 @@
                             <div class="form-group">
                                 <label for="eventoDetalle">Detalle</label>
                                 <textarea id="eventoDetalle" class="form-control" rows="3" placeholder="Notas o detalle del evento"></textarea>
+                            </div>
+                            <div class="form-group avisos-opciones">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="eventoAvisarAdmin" checked>
+                                    <span><i class="bi bi-bell"></i> Recordatorio para el admin (avisar en el panel)</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="eventoAvisarCliente">
+                                    <span><i class="bi bi-person-lines-fill"></i> Avisar al cliente (aparecerá en pendientes hasta marcar como avisado)</span>
+                                </label>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" onclick="closeModal('addEventoModal')" class="btn btn-secondary">

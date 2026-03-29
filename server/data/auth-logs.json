@@ -1,0 +1,9 @@
+[
+  {
+    "id": "63640823-706b-4e4c-a823-83ca498cc06f",
+    "event": "auth.login.success",
+    "timestamp": "2026-03-29T18:52:12.976Z",
+    "username": "admin",
+    "userId": "ea58bd47-0a2b-42d7-94a8-ed272bd1fd4c"
+  }
+]

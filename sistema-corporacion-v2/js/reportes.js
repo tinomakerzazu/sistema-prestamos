@@ -1,4 +1,4 @@
-﻿checkAuth();
+checkAuth();
 document.getElementById('userName').textContent = sessionStorage.getItem('userName') || 'Usuario';
 updateBadges();
 
@@ -101,7 +101,7 @@ function renderMonthlyChart(pagos) {
     const maxValue = Math.max(...series.map(item => item.total), 1);
 
     monthlyChart.innerHTML = series
-        .map(item => `<span style="--value: ${Math.round((item.total / maxValue) * 100)}" data-label="${item.label}"></span>`)
+        .map(item => `<span style="--value: ${Math.round((item.total / maxValue) * 100)}" data-label="${escapeHtml(item.label)}"></span>`)
         .join('');
 
     const monthlyTotal = series.reduce((sum, item) => sum + item.total, 0);
@@ -123,7 +123,7 @@ function renderMetodoList(pagos) {
         return `
             <div class="meter-item">
                 <div>
-                    <div class="meter-label">${metodo}</div>
+                    <div class="meter-label">${escapeHtml(metodo)}</div>
                     <div class="meter-bar"><span style="--value: ${percentage}%"></span></div>
                 </div>
                 <div class="meter-value">${percentage}%</div>
@@ -150,7 +150,7 @@ function renderTopClientes(pagos) {
 
     topClientesList.innerHTML = top.map(([cliente, total]) => `
         <div class="list-item">
-            <strong>${cliente}</strong>
+            <strong>${escapeHtml(cliente)}</strong>
             <div class="text-muted">${formatMoney(total)}</div>
         </div>
     `).join('');
@@ -173,7 +173,7 @@ function renderInsights(pagos) {
     reportInsights.innerHTML = insights.map(text => `
         <div class="list-item">
             <i class="bi bi-stars"></i>
-            ${text}
+            ${escapeHtml(text)}
         </div>
     `).join('');
 }
@@ -190,11 +190,11 @@ function renderReportTable(pagos) {
         .map(pago => `
             <tr>
                 <td>${formatDate(pago.fecha)}</td>
-                <td>${pago.cliente || '-'}</td>
-                <td>${pago.metodo || '-'}</td>
-                <td>${pago.referencia || '-'}</td>
+                <td>${escapeHtml(pago.cliente || '-')}</td>
+                <td>${escapeHtml(pago.metodo || '-')}</td>
+                <td>${escapeHtml(pago.referencia || '-')}</td>
                 <td>${formatMoney(pago.monto)}</td>
-                <td><span class="status-pill status-${pago.estado || 'Registrado'}">${pago.estado || 'Registrado'}</span></td>
+                <td><span class="status-pill status-${pago.estado || 'Registrado'}">${escapeHtml(pago.estado || 'Registrado')}</span></td>
             </tr>
         `).join('');
 }
@@ -275,12 +275,13 @@ function exportReportCSV() {
         pago.monto || '',
         pago.estado || ''
     ]);
-    const csvContent = [header, ...rows].map(row => row.map(value => `"${value}"`).join(',')).join('\n');
+    const csvContent = [header, ...rows].map(row => row.map(value => escapeCsvValue(value)).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `reporte_pagos_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 function downloadResumen() {
@@ -299,6 +300,7 @@ function downloadResumen() {
     link.href = URL.createObjectURL(blob);
     link.download = `resumen_${new Date().toISOString().slice(0, 10)}.txt`;
     link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 async function loadPagos() {
@@ -311,15 +313,23 @@ async function loadPagos() {
     }
 }
 
-generateReportBtn.addEventListener('click', renderReport);
-clearReportFiltersBtn.addEventListener('click', () => {
-    reportMetodo.value = '';
-    reportEstado.value = '';
-    setDefaultRange();
-    renderReport();
-});
-exportCsvBtn.addEventListener('click', exportReportCSV);
-downloadResumenBtn.addEventListener('click', downloadResumen);
+if (generateReportBtn) {
+    generateReportBtn.addEventListener('click', renderReport);
+}
+if (clearReportFiltersBtn) {
+    clearReportFiltersBtn.addEventListener('click', () => {
+        reportMetodo.value = '';
+        reportEstado.value = '';
+        setDefaultRange();
+        renderReport();
+    });
+}
+if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', exportReportCSV);
+}
+if (downloadResumenBtn) {
+    downloadResumenBtn.addEventListener('click', downloadResumen);
+}
 
 setDefaultRange();
 loadPagos();

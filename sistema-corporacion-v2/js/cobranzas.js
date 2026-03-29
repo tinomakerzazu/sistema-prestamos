@@ -1,4 +1,4 @@
-﻿if (typeof checkAuth === 'function') {
+if (typeof checkAuth === 'function') {
     checkAuth();
 }
 
@@ -28,13 +28,13 @@ function renderCobranzas() {
     cobranzasTableBody.innerHTML = cobranzasCache
         .map(item => `
             <tr>
-                <td>${item.cliente || '-'}</td>
+                <td>${escapeHtml(item.cliente || '-')}</td>
                 <td>${formatMoney(item.saldo)}</td>
-                <td>${item.dias_mora ?? item.diasMora ?? 0}</td>
-                <td>${item.ultima_gestion || item.ultimaGestion || '-'}</td>
-                <td>${item.estado || '-'}</td>
+                <td>${escapeHtml(item.dias_mora ?? item.diasMora ?? 0)}</td>
+                <td>${escapeHtml(item.ultima_gestion || item.ultimaGestion || '-')}</td>
+                <td>${escapeHtml(item.estado || '-')}</td>
                 <td>
-                    <button class="btn btn-danger btn-sm" onclick="deleteCobranza('${item.id}')" type="button">
+                    <button class="btn btn-danger btn-sm js-delete-cobranza" data-cobranza-id="${escapeHtml(item.id)}" type="button">
                         <i class="bi bi-trash"></i>
                     </button>
                 </td>
@@ -115,6 +115,14 @@ if (cobranzaForm) {
 if (addCobranzaBtn) {
     addCobranzaBtn.addEventListener('click', showAddCobranzaModal);
 }
+
+document.addEventListener('click', (event) => {
+    const deleteBtn = event.target.closest('.js-delete-cobranza');
+    if (deleteBtn) {
+        const id = deleteBtn.getAttribute('data-cobranza-id');
+        if (id) deleteCobranza(id);
+    }
+});
 
 window.showAddCobranzaModal = showAddCobranzaModal;
 window.deleteCobranza = deleteCobranza;

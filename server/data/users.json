@@ -1,0 +1,14 @@
+[
+  {
+    "id": "ea58bd47-0a2b-42d7-94a8-ed272bd1fd4c",
+    "username": "admin",
+    "name": "Admin",
+    "passwordHash": "$2a$10$egjh7CDQxkLgXNVss.pgZOOPrwtreRp76irI5mxEvq3eKxVge.Ry6"
+  },
+  {
+    "id": "3b91c024-ef62-4b50-933e-edb1b48852b3",
+    "username": "jairo@corp.prestamos.com",
+    "name": "Jairo",
+    "passwordHash": "$2a$10$2DyPyjKiIlpuyRXWMX0qFu41GBv7u1BG631ChZIICHxz7V5zb369e"
+  }
+]

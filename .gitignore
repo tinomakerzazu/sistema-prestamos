@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+server/node_modules/
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+
+# Runtime data (optional: uncomment if you never want JSON DB in git)
+# server/data/*.json
+# !server/data/.gitkeep
+
+# Uploads
+server/uploads/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

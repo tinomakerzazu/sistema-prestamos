@@ -1,4 +1,4 @@
-﻿checkAuth();
+checkAuth();
 document.getElementById('userName').textContent = sessionStorage.getItem('userName') || 'Usuario';
 
 let fotoPerfilBase64 = null;
@@ -156,23 +156,24 @@ async function loadClientes() {
 
 function renderClienteRow(cliente) {
     const fotoHTML = cliente.fotoPerfil
-        ? `<img src="${cliente.fotoPerfil}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold);">`
+        ? `<img src="${escapeHtml(cliente.fotoPerfil)}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold);">`
         : '<i class="bi bi-person-circle" style="font-size: 2rem; color: var(--gold);"></i>';
 
     const avalNombre = cliente.aval?.nombre ? cliente.aval.nombre : '-';
+    const id = escapeHtml(cliente.id);
 
     return `<tr>
         <td>${fotoHTML}</td>
-        <td>${cliente.dni}</td>
-        <td>${cliente.nombres} ${cliente.apellidos}</td>
-        <td>${cliente.telefonoPrincipal}</td>
-        <td>${cliente.direccion || '-'}</td>
-        <td>${avalNombre}</td>
+        <td>${escapeHtml(cliente.dni)}</td>
+        <td>${escapeHtml(`${cliente.nombres || ''} ${cliente.apellidos || ''}`.trim())}</td>
+        <td>${escapeHtml(cliente.telefonoPrincipal)}</td>
+        <td>${escapeHtml(cliente.direccion || '-')}</td>
+        <td>${escapeHtml(avalNombre)}</td>
         <td>
-            <button class="btn btn-info btn-sm" onclick="viewCliente('${cliente.id}')" type="button">
+            <button class="btn btn-info btn-sm js-view-cliente" data-cliente-id="${id}" type="button">
                 <i class="bi bi-eye"></i>
             </button>
-            <button class="btn btn-danger btn-sm" onclick="deleteCliente('${cliente.id}')" type="button">
+            <button class="btn btn-danger btn-sm js-delete-cliente" data-cliente-id="${id}" type="button">
                 <i class="bi bi-trash"></i>
             </button>
         </td>
@@ -183,10 +184,10 @@ function filterClientes() {
     const search = document.getElementById('searchCliente').value.toLowerCase();
 
     const filtered = clientesCache.filter(c =>
-        c.dni.includes(search) ||
-        c.nombres.toLowerCase().includes(search) ||
-        c.apellidos.toLowerCase().includes(search) ||
-        c.telefonoPrincipal.includes(search) ||
+        String(c.dni || '').includes(search) ||
+        String(c.nombres || '').toLowerCase().includes(search) ||
+        String(c.apellidos || '').toLowerCase().includes(search) ||
+        String(c.telefonoPrincipal || '').includes(search) ||
         (c.aval?.nombre || '').toLowerCase().includes(search) ||
         (c.aval?.telefono || '').includes(search)
     );
@@ -226,6 +227,12 @@ function showAddClienteModal() {
 
 document.getElementById('clienteForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    const form = e.currentTarget;
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        showNotification('Completa los campos obligatorios para registrar el cliente.', 'error');
+        return;
+    }
 
     const cliente = {
         dni: document.getElementById('dni').value.trim(),
@@ -253,7 +260,7 @@ document.getElementById('clienteForm').addEventListener('submit', async (e) => {
         }, 2000);
     } catch (err) {
         console.error(err);
-        showNotification('No se pudo registrar el cliente', 'error');
+        showNotification(err.message || 'No se pudo registrar el cliente', 'error');
     }
 });
 
@@ -277,7 +284,7 @@ function viewCliente(id) {
             message += `\n\nUbicación: ${cliente.ubicacion.lat.toFixed(5)}, ${cliente.ubicacion.lng.toFixed(5)}`;
         }
 
-        alert(message);
+        showNotification(message, 'success');
     }
 }
 
@@ -295,6 +302,74 @@ async function deleteCliente(id) {
 }
 
 loadClientes();
+
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', logout);
+}
+
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', toggleSidebar);
+}
+
+const nuevoClienteBtn = document.getElementById('nuevoClienteBtn');
+if (nuevoClienteBtn) {
+    nuevoClienteBtn.addEventListener('click', showAddClienteModal);
+}
+
+const searchClienteInput = document.getElementById('searchCliente');
+if (searchClienteInput) {
+    searchClienteInput.addEventListener('input', filterClientes);
+}
+
+document.querySelectorAll('.close-cliente-modal-btn').forEach((button) => {
+    button.addEventListener('click', () => closeModal('addClienteModal'));
+});
+
+const fotoPerfilPreview = document.getElementById('fotoPerfilPreview');
+const fotoPerfilInput = document.getElementById('fotoPerfil');
+if (fotoPerfilPreview && fotoPerfilInput) {
+    fotoPerfilPreview.addEventListener('click', () => fotoPerfilInput.click());
+    fotoPerfilInput.addEventListener('change', () => previewFoto(fotoPerfilInput, 'fotoPerfilPreview'));
+}
+
+const fotoDocumentoPreview = document.getElementById('fotoDocumentoPreview');
+const fotoDocumentoInput = document.getElementById('fotoDocumento');
+if (fotoDocumentoPreview && fotoDocumentoInput) {
+    fotoDocumentoPreview.addEventListener('click', () => fotoDocumentoInput.click());
+    fotoDocumentoInput.addEventListener('change', () => previewFoto(fotoDocumentoInput, 'fotoDocumentoPreview'));
+}
+
+const startLocationBtn = document.getElementById('startLocationBtn');
+if (startLocationBtn) {
+    startLocationBtn.addEventListener('click', startLocation);
+}
+
+const stopLocationBtn = document.getElementById('stopLocationBtn');
+if (stopLocationBtn) {
+    stopLocationBtn.addEventListener('click', stopLocation);
+}
+
+const clearLocationBtn = document.getElementById('clearLocationBtn');
+if (clearLocationBtn) {
+    clearLocationBtn.addEventListener('click', clearLocation);
+}
+
+document.addEventListener('click', (event) => {
+    const viewBtn = event.target.closest('.js-view-cliente');
+    if (viewBtn) {
+        const id = viewBtn.getAttribute('data-cliente-id');
+        if (id) viewCliente(id);
+        return;
+    }
+
+    const deleteBtn = event.target.closest('.js-delete-cliente');
+    if (deleteBtn) {
+        const id = deleteBtn.getAttribute('data-cliente-id');
+        if (id) deleteCliente(id);
+    }
+});
 window.previewFoto = previewFoto;
 window.startLocation = startLocation;
 window.stopLocation = stopLocation;

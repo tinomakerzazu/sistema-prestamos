@@ -1,9 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Clientes - Corporación</title>
+    <title>Gestión de Clientes - Norse Kredit</title>
+    <link rel="icon" href="img/icono.png" type="image/png">
     <link rel="stylesheet" href="css/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,21 +16,21 @@
 <body class="app-shell">
     <nav class="navbar">
         <div class="navbar-brand">
-            <i class="bi bi-shield-shaded"></i>
-            <span>CORPORACIÓN</span>
+            <img src="img/icono.png" alt="Norse Kredit" class="navbar-logo">
+            <span>NORSE KREDIT</span>
         </div>
         <div class="navbar-menu">
             <span class="user-info">
                 <i class="bi bi-person-circle"></i>
                 <span id="userName">Administrador</span>
             </span>
-            <button onclick="logout()" class="btn btn-secondary btn-sm" type="button">
+            <button id="logoutBtn" class="btn btn-secondary btn-sm" type="button">
                 <i class="bi bi-box-arrow-right"></i> Salir
             </button>
         </div>
     </nav>
 
-    <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <div class="container-app">
         <aside class="sidebar" id="sidebar">
@@ -75,6 +76,12 @@
                     </a>
                 </li>
                 <li class="menu-item">
+                    <a href="tracking.html" class="menu-link">
+                        <i class="bi bi-broadcast menu-icon"></i>
+                        <span class="menu-text">Tracking</span>
+                    </a>
+                </li>
+                <li class="menu-item">
                     <a href="reportes.html" class="menu-link">
                         <i class="bi bi-bar-chart menu-icon"></i>
                         <span class="menu-text">Reportes</span>
@@ -100,7 +107,7 @@
             <div class="page-header">
                 <div>
                     <h1><i class="bi bi-people"></i> Gestión de clientes</h1>
-                    <button onclick="showAddClienteModal()" class="btn btn-primary" type="button"><i class="bi bi-plus-circle"></i> Nuevo cliente</button>
+                    <button id="nuevoClienteBtn" class="btn btn-primary" type="button"><i class="bi bi-plus-circle"></i> Nuevo cliente</button>
                 </div>
             </div>
             <div class="card">
@@ -110,7 +117,7 @@
                 <div class="card-body">
                     <div class="search-bar">
                         <div class="form-group">
-                            <input type="text" id="searchCliente" class="form-control" placeholder="Buscar por DNI, nombre o teléfono..." onkeyup="filterClientes()">
+                            <input type="text" id="searchCliente" class="form-control" placeholder="Buscar por DNI, nombre o teléfono...">
                         </div>
                     </div>
                 </div>
@@ -148,7 +155,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h2><i class="bi bi-person-plus"></i> Nuevo cliente</h2>
-                        <button class="close-btn" onclick="closeModal('addClienteModal')" type="button">&times;</button>
+                        <button class="close-btn close-cliente-modal-btn" type="button">&times;</button>
                     </div>
                     <div class="modal-body">
                         <form id="clienteForm">
@@ -157,28 +164,28 @@
                                     <label class="foto-label">
                                         <i class="bi bi-person-circle"></i> Foto de perfil
                                     </label>
-                                    <div class="foto-preview" id="fotoPerfilPreview" onclick="document.getElementById('fotoPerfil').click()">
+                                    <div class="foto-preview" id="fotoPerfilPreview">
                                         <div class="foto-placeholder">
                                             <i class="bi bi-camera-fill"></i>
                                             <p>Click para subir foto</p>
                                             <small>PNG, JPG (Max. 5MB)</small>
                                         </div>
                                     </div>
-                                    <input type="file" id="fotoPerfil" class="foto-input" accept="image/*" onchange="previewFoto(this, 'fotoPerfilPreview')">
+                                    <input type="file" id="fotoPerfil" class="foto-input" accept="image/*">
                                 </div>
 
                                 <div class="foto-upload-box">
                                     <label class="foto-label">
                                         <i class="bi bi-card-heading"></i> Foto del documento (DNI)
                                     </label>
-                                    <div class="foto-preview" id="fotoDocumentoPreview" onclick="document.getElementById('fotoDocumento').click()">
+                                    <div class="foto-preview" id="fotoDocumentoPreview">
                                         <div class="foto-placeholder">
                                             <i class="bi bi-file-earmark-image"></i>
                                             <p>Click para subir documento</p>
                                             <small>PNG, JPG (Max. 5MB)</small>
                                         </div>
                                     </div>
-                                    <input type="file" id="fotoDocumento" class="foto-input" accept="image/*" onchange="previewFoto(this, 'fotoDocumentoPreview')">
+                                    <input type="file" id="fotoDocumento" class="foto-input" accept="image/*">
                                 </div>
                             </div>
 
@@ -226,13 +233,13 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="map-actions">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="startLocation()">
+                                        <button type="button" class="btn btn-secondary btn-sm" id="startLocationBtn">
                                             <i class="bi bi-broadcast"></i> Iniciar
                                         </button>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="stopLocation()">
+                                        <button type="button" class="btn btn-secondary btn-sm" id="stopLocationBtn">
                                             <i class="bi bi-pause-circle"></i> Detener
                                         </button>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="clearLocation()">
+                                        <button type="button" class="btn btn-secondary btn-sm" id="clearLocationBtn">
                                             <i class="bi bi-x-circle"></i> Limpiar
                                         </button>
                                     </div>
@@ -268,7 +275,7 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" onclick="closeModal('addClienteModal')" class="btn btn-secondary">
+                                <button type="button" class="btn btn-secondary close-cliente-modal-btn">
                                     <i class="bi bi-x-circle"></i> Cancelar
                                 </button>
                                 <button type="submit" class="btn btn-primary">

@@ -1,4 +1,4 @@
-﻿checkAuth();
+checkAuth();
 document.getElementById('userName').textContent = sessionStorage.getItem('userName') || 'Usuario';
 updateBadges();
 
@@ -23,6 +23,28 @@ const pagosTotalDelta = document.getElementById('pagosTotalDelta');
 const pagosTotalTag = document.getElementById('pagosTotalTag');
 
 let pagosCache = [];
+let clientesCache = [];
+
+async function loadClientesForPagoSelect() {
+    const select = document.getElementById('pagoCliente');
+    if (!select) return;
+    try {
+        clientesCache = await Storage.getClientes();
+        const baseOpts = ['<option value="">Selecciona un cliente</option>'];
+        clientesCache.forEach(cliente => {
+            const nombre = `${cliente.nombres || ''} ${cliente.apellidos || ''}`.trim() || 'Sin nombre';
+            const label = cliente.dni ? `${cliente.dni} - ${nombre}` : nombre;
+            baseOpts.push(`<option value="${escapeHtml(cliente.id)}" data-name="${escapeHtml(nombre || '')}">${escapeHtml(label)}</option>`);
+        });
+        baseOpts.push('<option value="__otro__">Otro (especificar)</option>');
+        select.innerHTML = baseOpts.join('');
+        select.disabled = false;
+    } catch (err) {
+        console.error(err);
+        select.innerHTML = '<option value="">No se pudieron cargar clientes</option>';
+        select.disabled = true;
+    }
+}
 
 function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
@@ -82,27 +104,29 @@ function renderPagos() {
             .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
             .map(pago => {
                 const estadoClass = `status-pill status-${pago.estado || 'Registrado'}`;
-                const comprobante = pago.comprobante?.url
-                    ? `<a class="btn btn-secondary btn-sm" href="${pago.comprobante.url}" target="_blank" rel="noopener">
+                const comprobanteUrl = sanitizeLink(pago.comprobante?.url);
+                const comprobante = comprobanteUrl
+                    ? `<a class="btn btn-secondary btn-sm" href="${escapeHtml(comprobanteUrl)}" target="_blank" rel="noopener">
                         <i class="bi bi-image"></i>
                     </a>`
                     : '<span class="text-muted">-</span>';
+                const id = escapeHtml(pago.id);
                 return `<tr>
                     <td>${formatDate(pago.fecha)}</td>
-                    <td>${pago.cliente || '-'}</td>
-                    <td>${pago.metodo || '-'}</td>
-                    <td>${pago.referencia || '-'}</td>
+                    <td>${escapeHtml(pago.cliente || '-')}</td>
+                    <td>${escapeHtml(pago.metodo || '-')}</td>
+                    <td>${escapeHtml(pago.referencia || '-')}</td>
                     <td>${formatMoney(pago.monto)}</td>
-                    <td><span class="${estadoClass}">${pago.estado || 'Registrado'}</span></td>
+                    <td><span class="${estadoClass}">${escapeHtml(pago.estado || 'Registrado')}</span></td>
                     <td>${comprobante}</td>
                     <td>
-                        <button class="btn btn-info btn-sm" onclick="markPagoEstado('${pago.id}', 'Aplicado')" type="button">
+                        <button class="btn btn-info btn-sm js-mark-pago" data-pago-id="${id}" data-pago-estado="Aplicado" type="button">
                             <i class="bi bi-check2-circle"></i>
                         </button>
-                        <button class="btn btn-secondary btn-sm" onclick="markPagoEstado('${pago.id}', 'Registrado')" type="button">
+                        <button class="btn btn-secondary btn-sm js-mark-pago" data-pago-id="${id}" data-pago-estado="Registrado" type="button">
                             <i class="bi bi-arrow-repeat"></i>
                         </button>
-                        <button class="btn btn-danger btn-sm" onclick="deletePago('${pago.id}')" type="button">
+                        <button class="btn btn-danger btn-sm js-delete-pago" data-pago-id="${id}" type="button">
                             <i class="bi bi-trash"></i>
                         </button>
                     </td>
@@ -112,7 +136,7 @@ function renderPagos() {
         pagosTableBody.innerHTML = rows;
     }
 
-    updateResumen(pagosCache);
+    updateResumen(pagos);
 }
 
 function updateResumen(pagos) {
@@ -169,12 +193,13 @@ function exportPagosCSV() {
         (pago.nota || '').replace(/[\n\r]+/g, ' ')
     ]);
 
-    const csvContent = [header, ...rows].map(row => row.map(value => `"${value}"`).join(',')).join('\n');
+    const csvContent = [header, ...rows].map(row => row.map(value => escapeCsvValue(value)).join(',')).join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `pagos_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 async function deletePago(id) {
@@ -204,8 +229,21 @@ async function markPagoEstado(id, estado) {
 pagoForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
+    const pagoClienteEl = document.getElementById('pagoCliente');
+    const opt = pagoClienteEl?.selectedOptions?.[0];
+    const clienteId = pagoClienteEl?.value?.trim() || '';
+    let clienteNombre = opt?.getAttribute('data-name') || opt?.textContent?.trim() || '';
+    if (clienteId === '__otro__') {
+        clienteNombre = document.getElementById('pagoClienteOtro')?.value?.trim() || '';
+        if (!clienteNombre) {
+            showNotification('Ingresa el nombre del cliente', 'error');
+            return;
+        }
+    }
+
     const payload = {
-        cliente: document.getElementById('pagoCliente').value.trim(),
+        cliente: clienteNombre,
+        clienteId: clienteId === '__otro__' ? null : (clienteId || null),
         monto: document.getElementById('pagoMonto').value,
         fecha: document.getElementById('pagoFecha').value,
         metodo: document.getElementById('pagoMetodo').value,
@@ -235,6 +273,7 @@ pagoForm.addEventListener('submit', async (e) => {
         showNotification('Pago registrado correctamente', 'success');
         pagoForm.reset();
         setDefaultDate();
+        loadClientesForPagoSelect();
         await syncPagos();
     } catch (err) {
         console.error(err);
@@ -242,16 +281,44 @@ pagoForm.addEventListener('submit', async (e) => {
     }
 });
 
-[filterSearch, filterMetodo, filterEstado, filterStartDate, filterEndDate].forEach(input => {
+[filterSearch, filterMetodo, filterEstado, filterStartDate, filterEndDate].filter(Boolean).forEach(input => {
     input.addEventListener('input', renderPagos);
     input.addEventListener('change', renderPagos);
 });
 
-focusPagoBtn.addEventListener('click', () => {
-    document.getElementById('pagoCliente').focus();
-});
+if (focusPagoBtn) {
+    focusPagoBtn.addEventListener('click', () => {
+        document.getElementById('pagoCliente').focus();
+    });
+}
 
-exportPagosBtn.addEventListener('click', exportPagosCSV);
+const pagoClienteSelect = document.getElementById('pagoCliente');
+if (pagoClienteSelect) {
+    pagoClienteSelect.addEventListener('change', () => {
+        const otroWrap = document.getElementById('pagoClienteOtroWrap');
+        if (otroWrap) otroWrap.style.display = pagoClienteSelect.value === '__otro__' ? 'block' : 'none';
+    });
+}
+
+if (exportPagosBtn) {
+    exportPagosBtn.addEventListener('click', exportPagosCSV);
+}
+
+document.addEventListener('click', (event) => {
+    const markBtn = event.target.closest('.js-mark-pago');
+    if (markBtn) {
+        const id = markBtn.getAttribute('data-pago-id');
+        const estado = markBtn.getAttribute('data-pago-estado');
+        if (id && estado) markPagoEstado(id, estado);
+        return;
+    }
+
+    const deleteBtn = event.target.closest('.js-delete-pago');
+    if (deleteBtn) {
+        const id = deleteBtn.getAttribute('data-pago-id');
+        if (id) deletePago(id);
+    }
+});
 
 async function syncPagos() {
     try {
@@ -267,4 +334,5 @@ window.deletePago = deletePago;
 window.markPagoEstado = markPagoEstado;
 
 setDefaultDate();
+loadClientesForPagoSelect();
 syncPagos();
