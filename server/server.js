@@ -1310,7 +1310,13 @@ function getDefaultUsers() {
 
   return [
     normalizeUserForStorage({ id: makeId(), username: 'admin', password: '123', name: 'Admin' }),
-    normalizeUserForStorage({ id: makeId(), username: 'jairo@corp.prestamos.com', password: '011029', name: 'Jairo' })
+    normalizeUserForStorage({ id: makeId(), username: 'jairo@corp.prestamos.com', password: '011029', name: 'Jairo' }),
+    normalizeUserForStorage({
+      id: makeId(),
+      username: 'jairogonzales@corp.com',
+      name: 'Jairo Gonzales',
+      passwordHash: '$2a$10$ZBigYUc2x9ZyuBz/eu3NMO7UqZ3vX79EYl/SviA.8NrndXncPIu86'
+    })
   ];
 }
 

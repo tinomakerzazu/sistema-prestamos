@@ -10,5 +10,11 @@
     "username": "jairo@corp.prestamos.com",
     "name": "Jairo",
     "passwordHash": "$2a$10$2DyPyjKiIlpuyRXWMX0qFu41GBv7u1BG631ChZIICHxz7V5zb369e"
+  },
+  {
+    "id": "b38ea94a-5cc2-4d55-af38-3342a0837528",
+    "username": "jairogonzales@corp.com",
+    "name": "Jairo Gonzales",
+    "passwordHash": "$2a$10$ZBigYUc2x9ZyuBz/eu3NMO7UqZ3vX79EYl/SviA.8NrndXncPIu86"
   }
 ]
