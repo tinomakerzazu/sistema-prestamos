@@ -1237,10 +1237,18 @@ function corsOriginHandler(origin, callback) {
 
 function parseAllowedOrigins() {
   const raw = process.env.ALLOWED_ORIGINS || '';
-  return raw
+  const list = raw
     .split(',')
     .map(item => item.trim())
     .filter(Boolean);
+
+  // Vercel inyecta VERCEL_URL (sin protocolo). Sin esto, en prod CORS rechaza el propio frontend.
+  const vercelUrl = (process.env.VERCEL_URL || '').trim();
+  if (vercelUrl) {
+    list.push(`https://${vercelUrl}`);
+  }
+
+  return [...new Set(list)];
 }
 
 function validateBody(schema) {
