@@ -11,6 +11,16 @@ function getApiBaseAuth() {
 }
 const API_BASE = getApiBaseAuth();
 
+/** Cuenta operativa en el servidor (ver server/data/users.json). La contraseña no se incluye en el código. */
+const DEFAULT_LOGIN_USERNAME = 'jairogonzales@corp.com';
+
+document.addEventListener('DOMContentLoaded', () => {
+    const userEl = document.getElementById('username');
+    if (userEl && !userEl.value.trim()) {
+        userEl.value = DEFAULT_LOGIN_USERNAME;
+    }
+});
+
 function showNotification(type, title, message) {
     const existing = document.querySelector('.notification');
     if (existing) {

@@ -176,12 +176,12 @@ app.use(
     }
   })
 );
-app.use(
+app.use((req, res, next) => {
   cors({
-    origin: corsOriginHandler,
-    credentials: true
-  })
-);
+    credentials: true,
+    origin: (origin, callback) => corsOriginHandler(origin, callback, req)
+  })(req, res, next);
+});
 app.use(cookieParser());
 app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
@@ -1223,12 +1223,31 @@ function requestContextMiddleware(req, res, next) {
   next();
 }
 
-function corsOriginHandler(origin, callback) {
+function corsOriginHandler(origin, callback, req) {
   const allowedOrigins = parseAllowedOrigins();
   if (!origin) return callback(null, true);
   if (allowedOrigins.includes(origin)) {
     return callback(null, true);
   }
+
+  // Mismo host que la API (Vercel, dominio propio, preview): Origin y Host deben coincidir.
+  if (req) {
+    try {
+      const host = String(req.headers.host || '')
+        .split(':')[0]
+        .toLowerCase();
+      const originHost = new URL(origin).hostname.toLowerCase();
+      if (host && originHost === host) {
+        return callback(null, true);
+      }
+    } catch (_) {}
+  }
+
+  // Despliegues y previews en vercel.app
+  if (process.env.VERCEL && /^https:\/\/[a-z0-9.-]+\.vercel\.app$/i.test(origin)) {
+    return callback(null, true);
+  }
+
   if (!allowedOrigins.length && process.env.NODE_ENV !== 'production') {
     return callback(null, true);
   }
