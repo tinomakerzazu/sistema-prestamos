@@ -212,6 +212,23 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+app.get('/api/supabase-test', requireAuth, async (req, res) => {
+  if (!HAS_SUPABASE) {
+    return res.json({ ok: false, reason: 'Supabase no configurado.' });
+  }
+  const results = {};
+  const tables = ['clientes', 'prestamos', 'pagos', 'cobranzas', 'eventos', 'tracking'];
+  for (const table of tables) {
+    try {
+      const { data, error } = await getSupabase().from(table).select('id').limit(1);
+      results[table] = error ? { ok: false, error: error.message, code: error.code } : { ok: true, count: (data || []).length };
+    } catch (err) {
+      results[table] = { ok: false, error: err.message };
+    }
+  }
+  res.json({ ok: true, supabase: { url: redactUrl(SUPABASE_URL) }, tables: results });
+});
+
 app.get('/api/metrics', requireAuth, (req, res) => {
   res.json({
     ok: true,
@@ -360,7 +377,7 @@ app.get('/api/clientes', (req, res) => {
       })
       .catch(err => {
         logError('supabase.clientes.list.error', err);
-        res.status(500).json({ error: 'No se pudieron cargar los clientes.' });
+        res.status(500).json({ error: 'No se pudieron cargar los clientes. ' + (err.message || '') });
       });
   }
 
@@ -382,7 +399,7 @@ app.post('/api/clientes', validateBody(createClienteSchema), (req, res) => {
       })
       .catch(err => {
         logError('supabase.clientes.create.error', err);
-        res.status(500).json({ error: 'No se pudo registrar el cliente.' });
+        res.status(500).json({ error: 'No se pudo registrar el cliente. ' + (err.message || '') });
       });
   }
 
@@ -414,7 +431,7 @@ app.put('/api/clientes/:id', validateBody(createClienteSchema.partial()), (req, 
       })
       .catch(err => {
         logError('supabase.clientes.update.error', err);
-        res.status(500).json({ error: 'No se pudo actualizar el cliente.' });
+        res.status(500).json({ error: 'No se pudo actualizar el cliente. ' + (err.message || '') });
       });
   }
 
@@ -444,7 +461,7 @@ app.delete('/api/clientes/:id', (req, res) => {
       })
       .catch(err => {
         logError('supabase.clientes.delete.error', err);
-        res.status(500).json({ error: 'No se pudo eliminar el cliente.' });
+        res.status(500).json({ error: 'No se pudo eliminar el cliente. ' + (err.message || '') });
       });
   }
 
@@ -466,7 +483,7 @@ app.get('/api/prestamos', (req, res) => {
       })
       .catch(err => {
         logError('supabase.prestamos.list.error', err);
-        res.status(500).json({ error: 'No se pudieron cargar los prestamos.' });
+        res.status(500).json({ error: 'No se pudieron cargar los prestamos. ' + (err.message || '') });
       });
   }
 
@@ -507,7 +524,7 @@ app.post('/api/prestamos', validateBody(z.object({
       })
       .catch(err => {
         logError('supabase.prestamos.create.error', err);
-        res.status(500).json({ error: 'No se pudo registrar el prestamo.' });
+        res.status(500).json({ error: 'No se pudo registrar el prestamo. ' + (err.message || '') });
       });
   }
 
@@ -558,7 +575,7 @@ app.put('/api/prestamos/:id', validateBody(z.object({
       })
       .catch(err => {
         logError('supabase.prestamos.update.error', err);
-        res.status(500).json({ error: 'No se pudo actualizar el prestamo.' });
+        res.status(500).json({ error: 'No se pudo actualizar el prestamo. ' + (err.message || '') });
       });
   }
 
@@ -588,7 +605,7 @@ app.delete('/api/prestamos/:id', (req, res) => {
       })
       .catch(err => {
         logError('supabase.prestamos.delete.error', err);
-        res.status(500).json({ error: 'No se pudo eliminar el prestamo.' });
+        res.status(500).json({ error: 'No se pudo eliminar el prestamo. ' + (err.message || '') });
       });
   }
 
@@ -759,7 +776,7 @@ app.get('/api/pagos', (req, res) => {
       })
       .catch(err => {
         logError('supabase.pagos.list.error', err);
-        res.status(500).json({ error: 'No se pudieron cargar los pagos.' });
+        res.status(500).json({ error: 'No se pudieron cargar los pagos. ' + (err.message || '') });
       });
   }
 
@@ -778,7 +795,7 @@ app.get('/api/tracking', (req, res) => {
       })
       .catch(err => {
         logError('supabase.tracking.list.error', err);
-        res.status(500).json({ error: 'No se pudieron cargar las ubicaciones.' });
+        res.status(500).json({ error: 'No se pudieron cargar las ubicaciones. ' + (err.message || '') });
       });
   }
 
@@ -885,7 +902,7 @@ app.post(
         return res.status(201).json(mapPagoFromDb(data));
       } catch (err) {
         logError('supabase.pagos.create.error', err);
-        return res.status(500).json({ error: 'No se pudo registrar el pago.' });
+        return res.status(500).json({ error: 'No se pudo registrar el pago. ' + (err.message || '') });
       }
     }
 
@@ -962,7 +979,7 @@ app.put('/api/pagos/:id', validateBody(z.object({
       })
       .catch(err => {
         logError('supabase.pagos.update.error', err);
-        res.status(500).json({ error: 'No se pudo actualizar el pago.' });
+        res.status(500).json({ error: 'No se pudo actualizar el pago. ' + (err.message || '') });
       });
   }
 
@@ -1005,7 +1022,7 @@ app.delete('/api/pagos/:id', (req, res) => {
       })
       .catch(err => {
         logError('supabase.pagos.delete.error', err);
-        res.status(500).json({ error: 'No se pudo eliminar el pago.' });
+        res.status(500).json({ error: 'No se pudo eliminar el pago. ' + (err.message || '') });
       });
   }
 
@@ -1036,7 +1053,7 @@ app.get('/api/cobranzas', (req, res) => {
       })
       .catch(err => {
         logError('supabase.cobranzas.list.error', err);
-        res.status(500).json({ error: 'No se pudieron cargar las cobranzas.' });
+        res.status(500).json({ error: 'No se pudieron cargar las cobranzas. ' + (err.message || '') });
       });
   }
 
@@ -1067,7 +1084,7 @@ app.post('/api/cobranzas', validateBody(cobranzaSchema), (req, res) => {
       })
       .catch(err => {
         logError('supabase.cobranzas.create.error', err);
-        res.status(500).json({ error: 'No se pudo registrar la cobranza.' });
+        res.status(500).json({ error: 'No se pudo registrar la cobranza. ' + (err.message || '') });
       });
   }
 
@@ -1108,7 +1125,7 @@ app.put('/api/cobranzas/:id', validateBody(cobranzaSchema.partial()), (req, res)
       })
       .catch(err => {
         logError('supabase.cobranzas.update.error', err);
-        res.status(500).json({ error: 'No se pudo actualizar la cobranza.' });
+        res.status(500).json({ error: 'No se pudo actualizar la cobranza. ' + (err.message || '') });
       });
   }
 
@@ -1132,7 +1149,7 @@ app.delete('/api/cobranzas/:id', (req, res) => {
       })
       .catch(err => {
         logError('supabase.cobranzas.delete.error', err);
-        res.status(500).json({ error: 'No se pudo eliminar la cobranza.' });
+        res.status(500).json({ error: 'No se pudo eliminar la cobranza. ' + (err.message || '') });
       });
   }
 
@@ -1155,7 +1172,7 @@ app.get('/api/eventos', (req, res) => {
       })
       .catch(err => {
         logError('supabase.eventos.list.error', err);
-        res.status(500).json({ error: 'No se pudieron cargar los eventos.' });
+        res.status(500).json({ error: 'No se pudieron cargar los eventos. ' + (err.message || '') });
       });
   }
 
@@ -1183,7 +1200,7 @@ app.post('/api/eventos', validateBody(eventoSchema), (req, res) => {
       })
       .catch(err => {
         logError('supabase.eventos.create.error', err);
-        res.status(500).json({ error: 'No se pudo registrar el evento.' });
+        res.status(500).json({ error: 'No se pudo registrar el evento. ' + (err.message || '') });
       });
   }
 
@@ -1216,7 +1233,7 @@ app.put('/api/eventos/:id', validateBody(eventoSchema.partial()), (req, res) => 
       })
       .catch(err => {
         logError('supabase.eventos.update.error', err);
-        res.status(500).json({ error: 'No se pudo actualizar el evento.' });
+        res.status(500).json({ error: 'No se pudo actualizar el evento. ' + (err.message || '') });
       });
   }
 
@@ -1240,7 +1257,7 @@ app.delete('/api/eventos/:id', (req, res) => {
       })
       .catch(err => {
         logError('supabase.eventos.delete.error', err);
-        res.status(500).json({ error: 'No se pudo eliminar el evento.' });
+        res.status(500).json({ error: 'No se pudo eliminar el evento. ' + (err.message || '') });
       });
   }
 
