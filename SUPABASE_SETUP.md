@@ -1,5 +1,40 @@
 # Supabase setup para Netlify
 
+## Crear solo la tabla de recordatorios por correo (cron)
+
+Si el resto de tablas ya existe y solo necesitas la deduplicación del envío automático:
+
+1. Entra a [Supabase](https://supabase.com) → tu proyecto.
+2. Menú **SQL** → **New query**.
+3. Pega el bloque siguiente y pulsa **Run**.
+
+```sql
+create table if not exists public.recordatorios_email_log (
+  id uuid primary key default gen_random_uuid(),
+  prestamo_id text not null,
+  fecha_cuota text not null,
+  sent_at timestamptz not null default now(),
+  unique (prestamo_id, fecha_cuota)
+);
+```
+
+4. Comprueba en **Table Editor** que aparece `recordatorios_email_log`.
+
+El backend usa esta tabla cuando `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` están definidos en Vercel (mismo proyecto que el resto de datos).
+
+## Horario del cron en Vercel (Lima, Perú)
+
+[Vercel Cron](https://vercel.com/docs/cron-jobs) define la expresión en **UTC**. En **Perú (America/Lima)** no hay horario de verano: **Lima = UTC−5** todo el año.
+
+| Hora en Lima | Expresión cron (UTC) | Notas |
+|----------------|----------------------|--------|
+| 07:00 | `0 12 * * *` | |
+| **08:00** | **`0 13 * * *`** | Valor actual en `vercel.json` (recordatorios por la mañana) |
+| 09:00 | `0 14 * * *` | |
+| 12:00 (mediodía) | `0 17 * * *` | |
+
+Para cambiar la hora local, edita `schedule` en `vercel.json` usando la columna UTC equivalente.
+
 ## Variables de entorno en Netlify
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
