@@ -5,5 +5,11 @@
   ],
   "routes": [
     { "src": "/(.*)", "dest": "/server/server.js" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/recordatorios-email",
+      "schedule": "0 13 * * *"
+    }
   ]
 }

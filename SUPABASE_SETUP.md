@@ -106,6 +106,15 @@ create table if not exists public.tracking (
   token text default '',
   updated_at timestamptz default now()
 );
+
+-- Log de recordatorios por correo (cron diario; evita duplicados por préstamo y fecha de cuota)
+create table if not exists public.recordatorios_email_log (
+  id uuid primary key default gen_random_uuid(),
+  prestamo_id text not null,
+  fecha_cuota text not null,
+  sent_at timestamptz not null default now(),
+  unique (prestamo_id, fecha_cuota)
+);
 ```
 
 ## Migración (si las tablas ya existen)
@@ -143,6 +152,15 @@ create table if not exists public.tracking (
   timestamp text,
   token text default '',
   updated_at timestamptz default now()
+);
+
+-- Recordatorios por correo (deduplicación del cron)
+create table if not exists public.recordatorios_email_log (
+  id uuid primary key default gen_random_uuid(),
+  prestamo_id text not null,
+  fecha_cuota text not null,
+  sent_at timestamptz not null default now(),
+  unique (prestamo_id, fecha_cuota)
 );
 ```
 

@@ -40,7 +40,8 @@ const dataFiles = {
   cobranzas: path.join(DATA_DIR, 'cobranzas.json'),
   eventos: path.join(DATA_DIR, 'eventos.json'),
   users: path.join(DATA_DIR, 'users.json'),
-  authLogs: path.join(DATA_DIR, 'auth-logs.json')
+  authLogs: path.join(DATA_DIR, 'auth-logs.json'),
+  reminderEmailLog: path.join(DATA_DIR, 'reminder-email-log.json')
 };
 
 const requestMetrics = {
@@ -210,6 +211,27 @@ app.get('/api/health', (req, res) => {
       totalErrors: requestMetrics.totalErrors
     }
   });
+});
+
+app.get('/api/cron/recordatorios-email', async (req, res) => {
+  const secret = (process.env.CRON_SECRET || '').trim();
+  const auth = req.headers.authorization || '';
+  const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  const q = String(req.query.secret || '').trim();
+  if (!secret) {
+    return res.status(503).json({ error: 'CRON_SECRET no configurado en el servidor.' });
+  }
+  if (bearer !== secret && q !== secret) {
+    return res.status(401).json({ error: 'No autorizado.' });
+  }
+
+  try {
+    const summary = await runAutomatedReminderEmails();
+    res.json({ ok: true, ...summary });
+  } catch (err) {
+    logError('cron.recordatorios-email.error', err);
+    res.status(500).json({ error: err.message || 'Error en recordatorios automáticos.' });
+  }
 });
 
 app.get('/api/supabase-test', requireAuth, async (req, res) => {
@@ -699,66 +721,25 @@ app.post('/api/recordatorios/email', smsLimiter, validateBody(sendEmailReminderS
   }
 
   try {
-    let prestamo;
-    let cliente;
-
-    if (HAS_SUPABASE) {
-      const prestamoResult = await getSupabase().from('prestamos').select('*').eq('id', prestamoId).maybeSingle();
-      if (prestamoResult.error) throw prestamoResult.error;
-      if (!prestamoResult.data) {
-        return res.status(404).json({ error: 'Prestamo no encontrado.' });
-      }
-      prestamo = mapPrestamoFromDb(prestamoResult.data);
-      const cid = prestamo.clienteId;
-      if (!cid) {
-        return res.status(400).json({ error: 'El prestamo no tiene clienteId asociado.' });
-      }
-      const clienteResult = await getSupabase().from('clientes').select('*').eq('id', cid).maybeSingle();
-      if (clienteResult.error) throw clienteResult.error;
-      if (!clienteResult.data) {
-        return res.status(400).json({ error: 'Cliente no encontrado para este prestamo.' });
-      }
-      cliente = mapClienteFromDb(clienteResult.data);
-    } else {
-      const prestamos = readData(dataFiles.prestamos);
-      const clientes = readData(dataFiles.clientes);
-      prestamo = prestamos.find(p => p.id === prestamoId);
-      if (!prestamo) {
-        return res.status(404).json({ error: 'Prestamo no encontrado.' });
-      }
-      const found = clientes.find(c => c.id === prestamo.clienteId);
-      if (!found) {
-        return res.status(400).json({ error: 'Cliente no encontrado para este prestamo.' });
-      }
-      cliente = found;
+    const loaded = await loadPrestamoClienteById(prestamoId);
+    if (!loaded.prestamo) {
+      return res.status(404).json({ error: 'Prestamo no encontrado.' });
     }
-
-    const correo = String(cliente.correo || '').trim();
-    if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    if (!loaded.prestamo.clienteId) {
+      return res.status(400).json({ error: 'El prestamo no tiene clienteId asociado.' });
+    }
+    if (!loaded.cliente) {
+      return res.status(400).json({ error: 'Cliente no encontrado para este prestamo.' });
+    }
+    const { prestamo, cliente } = loaded;
+    await deliverPaymentReminderEmail(prestamo, cliente, { source: 'manual' });
+    res.json({ ok: true, message: 'Recordatorio enviado por correo.' });
+  } catch (err) {
+    if (err && err.code === 'INVALID_EMAIL') {
       return res.status(400).json({
         error: 'El cliente no tiene un correo valido. Registrelo en la ficha del cliente (campo Correo).'
       });
     }
-
-    const { subject, text, html } = buildReminderEmailContent(prestamo, cliente);
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-    });
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: correo,
-      subject,
-      text,
-      html
-    });
-
-    appendAuditLog('email.reminder.sent', { prestamoId, toDomain: correo.split('@')[1] || null });
-    res.json({ ok: true, message: 'Recordatorio enviado por correo.' });
-  } catch (err) {
     logError('email.reminder.error', err);
     res.status(500).json({ error: err.message || 'No se pudo enviar el correo.' });
   }
@@ -1525,7 +1506,17 @@ function bootstrapSeedData() {
   if (!IS_VERCEL) return;
   const sourceDir = path.join(__dirname, 'data');
   if (!fs.existsSync(sourceDir)) return;
-  const fileNames = ['clientes.json', 'prestamos.json', 'pagos.json', 'tracking.json', 'cobranzas.json', 'eventos.json', 'users.json', 'auth-logs.json'];
+  const fileNames = [
+    'clientes.json',
+    'prestamos.json',
+    'pagos.json',
+    'tracking.json',
+    'cobranzas.json',
+    'eventos.json',
+    'users.json',
+    'auth-logs.json',
+    'reminder-email-log.json'
+  ];
   fileNames.forEach(fileName => {
     const source = path.join(sourceDir, fileName);
     const target = path.join(DATA_DIR, fileName);
@@ -1884,6 +1875,234 @@ function buildReminderEmailContent(prestamo, cliente) {
     text,
     html
   };
+}
+
+function getLimaYmdForInstant(date) {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Lima',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  const p = fmt.formatToParts(date);
+  const y = p.find(x => x.type === 'year').value;
+  const m = p.find(x => x.type === 'month').value;
+  const d = p.find(x => x.type === 'day').value;
+  return `${y}-${m}-${d}`;
+}
+
+function getTomorrowLimaYmd() {
+  const base = new Date();
+  const today = getLimaYmdForInstant(base);
+  let probe = new Date(base.getTime() + 12 * 3600000);
+  for (let i = 0; i < 10; i++) {
+    const ymd = getLimaYmdForInstant(probe);
+    if (ymd !== today) return ymd;
+    probe = new Date(probe.getTime() + 12 * 3600000);
+  }
+  return today;
+}
+
+function normalizeFechaToYmd(fecha) {
+  if (!fecha) return '';
+  const s = String(fecha).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const m = s.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (m) {
+    const day = m[1].padStart(2, '0');
+    const month = m[2].padStart(2, '0');
+    const year = m[3];
+    return `${year}-${month}-${day}`;
+  }
+  return '';
+}
+
+function getCronogramaPagosArray(prestamo) {
+  let c = prestamo.cronogramaPagos;
+  if (typeof c === 'string') {
+    try {
+      c = JSON.parse(c);
+    } catch (_) {
+      c = [];
+    }
+  }
+  return Array.isArray(c) ? c : [];
+}
+
+function findPendingCuotaOnDate(prestamo, targetYmd) {
+  const cronograma = getCronogramaPagosArray(prestamo);
+  for (const cuota of cronograma) {
+    if ((cuota.estado || '').toLowerCase() !== 'pendiente') continue;
+    const ymd = normalizeFechaToYmd(cuota.fecha);
+    if (ymd && ymd === targetYmd) return cuota;
+  }
+  return null;
+}
+
+function isPrestamoElegibleRecordatorio(prestamo) {
+  const e = String(prestamo.estado || '').toLowerCase();
+  if (!e) return true;
+  const excluidos = ['cancelado', 'cerrado', 'finalizado', 'pagado', 'liquidado'];
+  return !excluidos.includes(e);
+}
+
+async function loadPrestamoClienteById(prestamoId) {
+  if (HAS_SUPABASE) {
+    const prestamoResult = await getSupabase().from('prestamos').select('*').eq('id', prestamoId).maybeSingle();
+    if (prestamoResult.error) throw prestamoResult.error;
+    if (!prestamoResult.data) return { prestamo: null, cliente: null };
+    const prestamo = mapPrestamoFromDb(prestamoResult.data);
+    const cid = prestamo.clienteId;
+    if (!cid) return { prestamo, cliente: null };
+    const clienteResult = await getSupabase().from('clientes').select('*').eq('id', cid).maybeSingle();
+    if (clienteResult.error) throw clienteResult.error;
+    if (!clienteResult.data) return { prestamo, cliente: null };
+    return { prestamo, cliente: mapClienteFromDb(clienteResult.data) };
+  }
+  const prestamos = readData(dataFiles.prestamos);
+  const clientes = readData(dataFiles.clientes);
+  const prestamo = prestamos.find(p => p.id === prestamoId) || null;
+  if (!prestamo) return { prestamo: null, cliente: null };
+  const found = clientes.find(c => c.id === prestamo.clienteId);
+  return { prestamo, cliente: found || null };
+}
+
+async function reminderAlreadyLogged(prestamoId, fechaCuota) {
+  if (HAS_SUPABASE) {
+    const { data, error } = await getSupabase()
+      .from('recordatorios_email_log')
+      .select('id')
+      .eq('prestamo_id', prestamoId)
+      .eq('fecha_cuota', fechaCuota)
+      .maybeSingle();
+    if (error) {
+      if (error.code === '42P01' || (error.message && error.message.includes('does not exist'))) {
+        throw new Error(
+          'Tabla recordatorios_email_log no existe en Supabase. Ejecute el SQL en SUPABASE_SETUP.md.'
+        );
+      }
+      throw error;
+    }
+    return Boolean(data);
+  }
+  const log = readData(dataFiles.reminderEmailLog);
+  return log.some(e => e.prestamoId === prestamoId && e.fechaCuota === fechaCuota);
+}
+
+async function logReminderSent(prestamoId, fechaCuota) {
+  if (HAS_SUPABASE) {
+    const { error } = await getSupabase().from('recordatorios_email_log').insert({
+      prestamo_id: prestamoId,
+      fecha_cuota: fechaCuota
+    });
+    if (error && error.code !== '23505') throw error;
+    return;
+  }
+  const log = readData(dataFiles.reminderEmailLog);
+  if (log.some(e => e.prestamoId === prestamoId && e.fechaCuota === fechaCuota)) return;
+  log.push({ prestamoId, fechaCuota, sentAt: new Date().toISOString() });
+  writeData(dataFiles.reminderEmailLog, log);
+}
+
+async function deliverPaymentReminderEmail(prestamo, cliente, meta = {}) {
+  const correo = String(cliente.correo || '').trim();
+  if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+    const err = new Error('Correo inválido');
+    err.code = 'INVALID_EMAIL';
+    throw err;
+  }
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    const err = new Error('SMTP no configurado');
+    err.code = 'NO_SMTP';
+    throw err;
+  }
+  const { subject, text, html } = buildReminderEmailContent(prestamo, cliente);
+  const nodemailer = require('nodemailer');
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+  });
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: correo,
+    subject,
+    text,
+    html
+  });
+  appendAuditLog('email.reminder.sent', {
+    prestamoId: prestamo.id,
+    source: meta.source || 'manual',
+    toDomain: correo.split('@')[1] || null
+  });
+}
+
+async function runAutomatedReminderEmails() {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    return {
+      skipped: true,
+      reason: 'smtp_not_configured',
+      tomorrowYmd: getTomorrowLimaYmd(),
+      sent: 0,
+      skippedCount: 0,
+      errors: []
+    };
+  }
+
+  const tomorrowYmd = getTomorrowLimaYmd();
+  let sent = 0;
+  let skippedCount = 0;
+  const errors = [];
+
+  let prestamos = [];
+  if (HAS_SUPABASE) {
+    const { data, error } = await getSupabase().from('prestamos').select('*');
+    if (error) throw error;
+    prestamos = (data || []).map(mapPrestamoFromDb);
+  } else {
+    prestamos = readData(dataFiles.prestamos);
+  }
+
+  for (const prestamo of prestamos) {
+    if (!isPrestamoElegibleRecordatorio(prestamo)) {
+      skippedCount++;
+      continue;
+    }
+    const cuota = findPendingCuotaOnDate(prestamo, tomorrowYmd);
+    if (!cuota) {
+      continue;
+    }
+
+    try {
+      if (await reminderAlreadyLogged(String(prestamo.id), tomorrowYmd)) {
+        skippedCount++;
+        continue;
+      }
+
+      const { cliente } = await loadPrestamoClienteById(prestamo.id);
+      if (!cliente) {
+        skippedCount++;
+        continue;
+      }
+
+      const correo = String(cliente.correo || '').trim();
+      if (!correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo)) {
+        skippedCount++;
+        continue;
+      }
+
+      await deliverPaymentReminderEmail(prestamo, cliente, { source: 'cron' });
+      await logReminderSent(String(prestamo.id), tomorrowYmd);
+      sent++;
+    } catch (e) {
+      logError('cron.reminder.one.error', e);
+      errors.push({ prestamoId: prestamo.id, message: e.message || String(e) });
+    }
+  }
+
+  appendAuditLog('email.reminder.cron', { tomorrowYmd, sent, skippedCount, errorCount: errors.length });
+  return { tomorrowYmd, sent, skippedCount, errors };
 }
 
 function sendTwilioSms({ res, prestamo, cliente, telefono, mensaje, clienteId }) {
