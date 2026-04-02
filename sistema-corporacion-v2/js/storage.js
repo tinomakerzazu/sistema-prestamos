@@ -22,12 +22,14 @@ async function apiRequest(path, options = {}) {
     const response = await fetch(url, requestOptions);
     if (!response.ok) {
         let message = 'Error de servidor';
-        try {
-            const payload = await response.json();
-            message = payload.error || payload.message || message;
-        } catch (_) {
-            const text = await response.text();
-            message = text || message;
+        const errBody = await response.text();
+        if (errBody) {
+            try {
+                const payload = JSON.parse(errBody);
+                message = payload.error || payload.message || message;
+            } catch (_) {
+                message = errBody.length > 200 ? `${errBody.slice(0, 200)}…` : errBody;
+            }
         }
 
         if (response.status === 401) {
